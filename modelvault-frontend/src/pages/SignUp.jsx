@@ -11,7 +11,6 @@ import {
   Eye,
   EyeOff,
   Terminal,
-  CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
 import { api } from '../api/client';
@@ -87,17 +86,20 @@ export default function SignUp() {
 
     setLoading(true);
     try {
+      const cleanUsername = username.trim();
+      const generatedUserId = `usr-${cleanUsername.toLowerCase().replace(/[^a-z0-9]/g, '') || 'operator'}`;
+
       await api.signUp({
-        username: username.trim(),
+        user_id: generatedUserId,
+        username: cleanUsername,
         email: email.trim(),
-        role,
-        department: clearance,
-        password,
+        role: role || 'Threat Intelligence Lead',
+        is_active: true,
       });
 
       addToast({
         title: 'Operator Enrolled Successfully',
-        message: `Credentials provisioned for ${username}. Redirecting to SOC Dashboard...`,
+        message: `Credentials provisioned for ${cleanUsername}. Redirecting to SOC Dashboard...`,
         type: 'success',
       });
 

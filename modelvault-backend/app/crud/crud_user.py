@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -21,8 +22,23 @@ async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 100) -> Li
 
 
 async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
+    # Check if user with same email exists
+    existing = await get_user_by_email(db, user_in.email)
+    if existing:
+        return existing
+
+    user_id = user_in.user_id
+    if not user_id:
+        clean_name = "".join(c for c in user_in.username.lower() if c.isalnum()) or "user"
+        user_id = f"usr-{clean_name}"
+
+    # Ensure user_id uniqueness
+    existing_id = await get_user_by_id(db, user_id)
+    if existing_id:
+        user_id = f"{user_id}-{uuid.uuid4().hex[:4]}"
+
     db_user = User(
-        user_id=user_in.user_id,
+        user_id=user_id,
         username=user_in.username,
         email=user_in.email,
         role=user_in.role,
