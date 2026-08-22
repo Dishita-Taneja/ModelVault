@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ShieldAlert,
   Lock,
@@ -11,7 +11,11 @@ import {
   Eye,
   EyeOff,
   Terminal,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
+import { api } from '../api/client';
+import { useToast } from '../context/ToastContext';
 
 function GoogleIcon() {
   return (
@@ -37,10 +41,79 @@ function GoogleIcon() {
 }
 
 export default function SignUp() {
+  const navigate = useNavigate();
+  const { addToast } = useToast();
+
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Form Field States
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('Threat Intelligence Lead');
+  const [clearance, setClearance] = useState('LEVEL_4_RESTRICTED');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleGoogleSignIn = () => {
-    console.log('Google sign-in - TODO');
+    addToast({
+      title: 'SSO Authentication',
+      message: 'Redirecting to Enterprise Identity Provider...',
+      type: 'info',
+    });
+  };
+
+  const handleEnroll = async (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+
+    if (!username.trim()) {
+      setErrorMessage('Operator Handle is required.');
+      return;
+    }
+    if (!email.trim()) {
+      setErrorMessage('Enterprise Email is required.');
+      return;
+    }
+    if (!password) {
+      setErrorMessage('Master Key is required.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMessage('Master Key and Verify Master Key do not match.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.signUp({
+        username: username.trim(),
+        email: email.trim(),
+        role,
+        department: clearance,
+        password,
+      });
+
+      addToast({
+        title: 'Operator Enrolled Successfully',
+        message: `Credentials provisioned for ${username}. Redirecting to SOC Dashboard...`,
+        type: 'success',
+      });
+
+      setTimeout(() => {
+        navigate('/');
+      }, 1000);
+    } catch (err) {
+      setErrorMessage(err?.message || 'Failed to enroll Sec-Ops operator account.');
+      addToast({
+        title: 'Enrollment Error',
+        message: err?.message || 'Failed to enroll Sec-Ops operator account.',
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -91,10 +164,15 @@ export default function SignUp() {
             </div>
           </div>
 
-          <form
-            onSubmit={(e) => e.preventDefault()}
-            className="space-y-4"
-          >
+          {/* Error Banner */}
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-950/40 border border-red-500/50 rounded-md text-xs font-mono text-red-300 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleEnroll} className="space-y-4">
             {/* Username & Email Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -104,7 +182,10 @@ export default function SignUp() {
                 </label>
                 <input
                   type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   placeholder="e.g. j.reese"
+                  required
                   className="w-full px-3.5 py-2 bg-surface border border-socBorder rounded-md text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all"
                 />
               </div>
@@ -116,7 +197,10 @@ export default function SignUp() {
                 </label>
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="operator@modelvault.io"
+                  required
                   className="w-full px-3.5 py-2 bg-surface border border-socBorder rounded-md text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all"
                 />
               </div>
@@ -130,7 +214,8 @@ export default function SignUp() {
                   <span>Operational Role</span>
                 </label>
                 <select
-                  defaultValue="Threat Intelligence Lead"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
                   className="w-full px-3.5 py-2 bg-surface border border-socBorder rounded-md text-xs font-mono text-slate-200 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all cursor-pointer"
                 >
                   <option value="Threat Intelligence Lead">Threat Intelligence Lead</option>
@@ -147,7 +232,8 @@ export default function SignUp() {
                   <span>Security Clearance</span>
                 </label>
                 <select
-                  defaultValue="LEVEL_4_RESTRICTED"
+                  value={clearance}
+                  onChange={(e) => setClearance(e.target.value)}
                   className="w-full px-3.5 py-2 bg-surface border border-socBorder rounded-md text-xs font-mono text-slate-200 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all cursor-pointer"
                 >
                   <option value="LEVEL_4_RESTRICTED">Level 4 (Threat Response)</option>
@@ -175,7 +261,10 @@ export default function SignUp() {
                 </label>
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
+                  required
                   className="w-full px-3.5 py-2 bg-surface border border-socBorder rounded-md text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all"
                 />
               </div>
@@ -187,7 +276,10 @@ export default function SignUp() {
                 </label>
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••••••"
+                  required
                   className="w-full px-3.5 py-2 bg-surface border border-socBorder rounded-md text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all"
                 />
               </div>
@@ -196,10 +288,11 @@ export default function SignUp() {
             {/* Submit Button */}
             <div className="pt-4">
               <button
-                type="button"
-                className="w-full py-2.5 px-4 rounded-md bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 border border-red-500/40 text-slate-100 text-xs font-mono font-bold uppercase tracking-wider shadow-glow-red hover:shadow-red-500/50 transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 px-4 rounded-md bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 border border-red-500/40 text-slate-100 text-xs font-mono font-bold uppercase tracking-wider shadow-glow-red hover:shadow-red-500/50 transition-all flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
               >
-                <span>ENROLL SEC-OPS OPERATOR</span>
+                <span>{loading ? 'PROVISIONING CREDENTIALS...' : 'ENROLL SEC-OPS OPERATOR'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
