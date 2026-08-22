@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Text, Uuid
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -33,6 +33,12 @@ class AnomalyResult(Base):
     reason: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
+    )
+    reviewed: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        index=True,
     )
     flagged_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

@@ -7,6 +7,7 @@ class AnomalyResultBase(BaseModel):
     access_event_id: uuid.UUID = Field(..., description="ID of the flagged access event")
     anomaly_score: float = Field(..., ge=0.0, description="Calculated anomaly score (e.g. 0.0 to 1.0 or unbounded float)")
     reason: str | None = Field(default=None, description="Explanation or classification for the anomaly")
+    reviewed: bool = Field(default=False, description="Triage review status")
     flagged_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when the event was flagged as anomalous",
