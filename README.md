@@ -1,128 +1,246 @@
-# ModelVault
+# ModelVault Backend & API Layer
 
-Security incident-response platform for monitoring and triaging anomalous access to ML models. FastAPI backend + PostgreSQL audit store + React SOC dashboard.
+ModelVault is a security incident-response system that monitors and flags anomalous ML model access.
+This repository contains the backend persistence layer, database migrations, and REST APIs built with FastAPI, PostgreSQL, SQLAlchemy 2.0 (async), and Alembic.
+
+---
+
+## Tech Stack
+- **Python 3.11+**
+- **FastAPI** — high-performance async web framework
+- **PostgreSQL** — relational database with JSONB support
+- **SQLAlchemy 2.0 (async)** — ORM with `postgresql+asyncpg://`
+- **Alembic** — async database migrations
+- **Pydantic v2** — validation and serialization schemas
+- **uv** — Python package and project manager
 
 ---
 
 ## Project Structure
-
 ```
-ModelVault/
-├── .venv/                  # Single shared Python virtualenv (uv-managed, project root only)
-├── modelvault-backend/     # FastAPI REST API, Alembic migrations, seed scripts
-├── modelvault-frontend/    # React + Vite SOC dashboard
-├── data/                   # Local datasets, exports, and seed assets (optional)
-├── pyproject.toml          # Root Python project config
-├── uv.lock
-└── README.md
+modelvault-backend/
+├── app/
+│   ├── main.py                  # FastAPI application entrypoint & middleware
+│   ├── core/
+│   │   ├── config.py            # Environment settings (Pydantic BaseSettings)
+│   │   └── database.py          # Async engine, sessionmaker & DB dependency
+│   ├── models/                  # SQLAlchemy 2.0 ORM models
+│   │   ├── base.py              # Declarative base
+│   │   ├── user.py              # User entity
+│   │   ├── model.py             # MLModel tracked entity
+│   │   ├── access_event.py      # AccessEvent audit log with JSONB
+│   │   └── anomaly_result.py    # Flagged AnomalyResult entity
+│   ├── schemas/                 # Pydantic v2 schemas
+│   │   ├── user.py
+│   │   ├── model.py
+│   │   ├── access_event.py
+│   │   ├── anomaly_result.py
+│   │   └── summary.py
+│   ├── crud/                    # Clean DB query functions
+│   │   ├── user.py
+│   │   ├── model.py
+│   │   ├── access_event.py
+│   │   ├── anomaly_result.py
+│   │   └── summary.py
+│   └── api/                     # REST API routers
+│       ├── users.py             # GET /users, GET /users/{id}, POST /users
+│       ├── models.py            # GET /models, GET /models/{id}, POST /models
+│       ├── access_events.py     # GET /access-events, POST /access-events
+│       ├── anomaly_results.py   # GET /anomaly-results, POST /anomaly-results
+│       └── summary.py           # GET /summary/top-suspicious
+├── alembic/                     # Database migrations
+│   ├── env.py                   # Async migration engine setup
+│   └── versions/
+│       └── 0001_initial_schema.py
+├── tests/                       # Pytest test suite
+│   ├── conftest.py
+│   └── test_api.py
+├── alembic.ini
+├── pyproject.toml
+├── seed.py                      # Async mock data seeder
+└── .env.example
 ```
 
-The frontend uses `node_modules/` (npm) and does **not** need a Python virtualenv.
+modelvault-frontend/
+├── index.html                  # HTML template with Google Fonts (JetBrains Mono & Inter)
+├── package.json                # Dependencies: React 18, Tailwind CSS, Lucide icons, Vite
+├── vite.config.js              # Vite bundler configuration
+├── tailwind.config.js          # Custom SOC dark theme, electric red/amber glows
+├── postcss.config.js           # PostCSS configuration
+├── src/
+│   ├── main.jsx                # React root mount
+│   ├── App.jsx                 # Main SOC dashboard with state and React Router
+│   ├── index.css               # Tailwind directives and custom terminal scrollbars
+│   ├── mockData.js             # Realistic mock data matching the exact required payload schema
+│   ├── utils/
+│   │   └── formatters.js       # Score categorizers, byte calculators, timestamp formatters
+│   └── components/
+│       ├── TopBar.jsx              # Wordmark, live status beacon, real-time UTC clock, sync button
+│       ├── StatsStrip.jsx          # 3 telemetry cards (Monitored, Flagged, Active Anomalies)
+│       ├── TopSuspiciousPanel.jsx  # Top 3 High-Threat cards with score gauges & quick view
+│       ├── FilterBar.jsx           # Owner, Model, Time-range, Status, and search filters
+│       ├── FlaggedModelsTable.jsx  # Main threat log table with triage toggle
+│       ├── EvidenceDrawer.jsx      # Slide-out forensic log viewer with raw JSON export
+│       └── Skeletons.jsx           # Shimmer loading skeleton placeholders
+└──
+
+
+
+modelvault-backend/
+├── app/
+│   ├── main.py                  # FastAPI application with CORS and routing
+│   ├── core/
+│   │   ├── config.py            # Environment configuration via Pydantic BaseSettings
+│   │   ├── database.py          # Async engine, sessionmaker, get_db dependency
+│   │   └── utils.py             # Flexible ISO datetime query parameter parsing
+│   ├── models/                  # SQLAlchemy 2.0 async ORM models
+│   │   ├── base.py              # DeclarativeBase
+│   │   ├── user.py              # users table
+│   │   ├── model.py             # models table (tracked ML models)
+│   │   ├── access_event.py      # access_events table (raw audit logs with JSONB)
+│   │   └── anomaly_result.py    # anomaly_results table (flagged results)
+│   ├── schemas/                 # Pydantic v2 validation and serialization schemas
+│   │   ├── user.py              # UserBase, UserCreate, UserRead
+│   │   ├── model.py             # MLModelBase, MLModelCreate, MLModelRead
+│   │   ├── access_event.py      # AccessEventBase, AccessEventCreate, AccessEventRead
+│   │   ├── anomaly_result.py    # AnomalyResultBase, AnomalyResultCreate, AnomalyResultRead
+│   │   └── summary.py           # SuspiciousAccessEventRead
+│   ├── crud/                    # Clean DB query layer
+│   │   ├── user.py
+│   │   ├── model.py
+│   │   ├── access_event.py
+│   │   ├── anomaly_result.py
+│   │   └── summary.py
+│   └── api/                     # REST API routers
+│       ├── users.py             # GET /users, GET /users/{id}, POST /users
+│       ├── models.py            # GET /models, GET /models/{id}, POST /models
+│       ├── access_events.py     # GET /access-events, POST /access-events
+│       ├── anomaly_results.py   # GET /anomaly-results, POST /anomaly-results
+│       └── summary.py           # GET /summary/top-suspicious
+├── alembic/                     # Database migrations
+│   ├── env.py                   # Async migration engine setup
+│   └── versions/
+│       └── 0001_initial_schema.py # Initial migration with PostgreSQL JSONB and indexes
+├── tests/                       # Pytest test suite
+│   ├── conftest.py              # Async in-memory test database & client fixtures
+│   ├── test_api.py              # Comprehensive REST API tests
+│   └── test_seed.py             # Seed data verification test
+├── alembic.ini
+├── pyproject.toml
+├── .env.example
+├── seed.py                      # Standalone async script to seed mock security data
+└── 
 
 ---
 
-## Prerequisites
+## Setup & Quickstart
 
-- **Python 3.11+** with [uv](https://docs.astral.sh/uv/)
-- **Node.js 18+** and npm
-- **PostgreSQL** (default database name: `modelvault`)
-
----
-
-## Python Environment (single `.venv` at root)
-
-Use **one** virtualenv at the project root. Do not create nested `.venv` directories inside `modelvault-backend/` or elsewhere.
-
-If a nested venv already exists, remove it and recreate at the root:
-
+### 1. Environment & Dependencies
+Using `uv`:
 ```bash
-# From ModelVault/ root
-rm -rf modelvault-backend/.venv   # remove nested venv if present
-uv venv                           # creates ModelVault/.venv
-source .venv/bin/activate         # Windows: .venv\Scripts\activate
-uv sync --all-groups              # installs backend + dev deps into root .venv
+uv venv
+uv pip install -e ".[dev]"
 ```
 
-This repo uses a **uv workspace**: `modelvault-backend` is a workspace member and shares the root `.venv` and `uv.lock`. Do not create a `.venv` inside `modelvault-backend/`.
-
-Use `uv run` from the project root or from `modelvault-backend/` — both use the shared root environment.
-
----
-
-## Backend Setup & Run
-
+### 2. Configuration
+Copy the environment template:
 ```bash
-# From ModelVault/ root
-cd modelvault-backend
 cp .env.example .env
-uv run alembic upgrade head
-uv run python seed.py
-
-# Start API (either command works)
-uv run uvicorn app.main:app --reload --port 8000          # from modelvault-backend/
-# or from project root:
-# uv run uvicorn app.main:app --reload --app-dir modelvault-backend --port 8000
+```
+Update `DATABASE_URL` with your PostgreSQL credentials, for example:
+```env
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/modelvault
 ```
 
-API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+### 3. Database Migrations
+Run the initial Alembic migration to create all tables and indexes:
+```bash
+alembic upgrade head
+```
 
-### Backend `.env` variables
+### 4. Seed Mock / Demo Data
+Populate realistic users, ML models, access events, and flagged anomaly results:
+```bash
+python seed.py
+```
 
-Create `modelvault-backend/.env` from `.env.example`:
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | Async PostgreSQL connection string | `postgresql+asyncpg://postgres:postgres@localhost:5432/modelvault` |
-| `PROJECT_NAME` | Display name for the API | `ModelVault Backend` |
-| `API_V1_STR` | API prefix (empty = routes at root) | `""` |
-| `DEBUG` | Enable debug mode | `True` |
+### 5. Start the API Server
+Run FastAPI via `uvicorn`:
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+Interactive Swagger UI will be available at: [http://localhost:8000/docs](http://localhost:8000/docs).
 
 ---
 
-## Frontend Setup & Run
+## API Endpoints Reference
 
+### Users
+- `GET /users` — List users (`skip`, `limit`)
+- `GET /users/{id}` — Get user details by UUID
+- `POST /users` — Create user
+
+### ML Models
+- `GET /models` — List tracked ML models
+- `GET /models/{id}` — Get model details by UUID
+- `POST /models` — Register a tracked model (`owner_id`, `sensitivity_level`: LOW, MEDIUM, HIGH, CRITICAL)
+
+### Access Events
+- `GET /access-events` — List access logs with optional query filters:
+  - `user_id` (UUID)
+  - `model_id` (UUID)
+  - `start_time` (ISO 8601 timestamp)
+  - `end_time` (ISO 8601 timestamp)
+  - `skip`, `limit`
+- `POST /access-events` — Ingest single access event (supports arbitrary JSONB `raw_metadata`)
+
+### Anomaly Results
+- `GET /anomaly-results` — List flagged anomaly results with query filters (`user_id`, `model_id`, `start_time`, `end_time`, `skip`, `limit`)
+- `POST /anomaly-results` — Ingest flagged anomaly result (integration stub writing payload directly to DB)
+
+### Summary
+- `GET /summary/top-suspicious` — Returns the top 3 suspicious access events sorted by `anomaly_score` descending.
+
+---
+
+## Example `curl` Requests
+
+### List Top Suspicious Events
 ```bash
-cd modelvault-frontend
-npm install
-cp .env.example .env
-npm run dev
+curl -X GET "http://localhost:8000/summary/top-suspicious"
 ```
 
-Dashboard: [http://localhost:5173](http://localhost:5173)  
-Sign-up page: [http://localhost:5173/signup](http://localhost:5173/signup)
-
-Production build:
-
+### Ingest an Access Event
 ```bash
-npm run build
-npm run preview
+curl -X POST "http://localhost:8000/access-events" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "00000000-0000-0000-0000-000000000001",
+    "model_id": "00000000-0000-0000-0000-000000000002",
+    "action": "download",
+    "source": "S3",
+    "raw_metadata": {
+      "ip_address": "198.51.100.42",
+      "bytes_transferred": 14500000000
+    }
+  }'
 ```
 
-### Frontend `.env` variables
-
-Create `modelvault-frontend/.env` from `.env.example`:
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `VITE_API_BASE_URL` | FastAPI backend base URL | `http://localhost:8000` |
-| `VITE_USE_MOCK_FALLBACK` | Use local mock data when API is unreachable | `true` |
+### Ingest Anomaly Result
+```bash
+curl -X POST "http://localhost:8000/anomaly-results" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "access_event_id": "<EVENT_UUID>",
+    "anomaly_score": 0.98,
+    "reason": "Massive unauthorized model weight download via direct S3 API outside business hours."
+  }'
+```
 
 ---
 
 ## Running Tests
-
-From the project root with the root `.venv` active:
-
+Run the automated test suite with pytest:
 ```bash
-cd modelvault-backend
 pytest -v
 ```
-
----
-
-## Quick Reference
-
-| Service | Command | URL |
-|---------|---------|-----|
-| Backend API | `cd modelvault-backend && uv run uvicorn app.main:app --reload --port 8000` | http://localhost:8000 |
-| Frontend | `cd modelvault-frontend && npm run dev` | http://localhost:5173 |
