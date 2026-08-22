@@ -1,4 +1,4 @@
-# ModelVault Backend & API Layer
+# ModelVault 
 
 ModelVault is a security incident-response system that monitors and flags anomalous ML model access.
 This repository contains the backend persistence layer, database migrations, and REST APIs built with FastAPI, PostgreSQL, SQLAlchemy 2.0 (async), and Alembic.
