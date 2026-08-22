@@ -1,0 +1,20 @@
+[
+  {
+    "event_id": "mdl-evt-401",
+    "timestamp": "2026-08-20T10:12:00Z",
+    "model_id": "mdl-embed-03",
+    "requester_arn": "arn:aws:iam::123456789012:user/bob.mle",
+    "input_tokens": 128,
+    "execution_time_ms": 45,
+    "status": "SUCCESS"
+  },
+  {
+    "event_id": "mdl-evt-402",
+    "timestamp": "2026-08-20T10:22:00Z",
+    "model_id": "mdl-llm-01",
+    "requester_arn": "arn:aws:iam::123456789012:user/charlie.compromised",
+    "input_tokens": 8192,
+    "execution_time_ms": 12000,
+    "status": "SUCCESS"
+  }
+]

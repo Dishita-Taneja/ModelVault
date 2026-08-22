@@ -1,0 +1,20 @@
+[
+  {
+    "event_id": "ec2-evt-201",
+    "timestamp": "2026-08-20T10:05:00Z",
+    "instance_id": "i-0a1b2c3d4e5f6789a",
+    "source_ip": "192.168.1.50",
+    "action": "DescribeInstances",
+    "bytes_transferred": 1024,
+    "status": "SUCCESS"
+  },
+  {
+    "event_id": "ec2-evt-202",
+    "timestamp": "2026-08-20T10:18:22Z",
+    "instance_id": "i-0987654321fedcba0",
+    "source_ip": "198.51.100.42",
+    "action": "RunInstances",
+    "bytes_transferred": 4096,
+    "status": "SUCCESS"
+  }
+]

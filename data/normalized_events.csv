@@ -1,0 +1,10 @@
+event_id,timestamp,reconciled_timestamp,log_source,user_id,user_arn,source_ip,resource_arn,model_id,action,status,bytes_transferred,risk_score,anomaly_flag
+iam-evt-101,2026-08-20T10:00:12Z,2026-08-20T10:00:12Z,IAM,usr-001,arn:aws:iam::123456789012:user/alice.security,192.168.1.50,arn:aws:iam::123456789012:user/alice.security,,ConsoleLogin,SUCCESS,0,0.05,false
+ec2-evt-201,2026-08-20T10:05:00Z,2026-08-20T10:05:00Z,EC2,usr-001,arn:aws:iam::123456789012:user/alice.security,192.168.1.50,arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f6789a,,DescribeInstances,SUCCESS,1024,0.10,false
+s3-evt-301,2026-08-20T10:10:00Z,2026-08-20T10:10:00Z,S3,usr-002,arn:aws:iam::123456789012:user/bob.mle,10.0.1.25,s3://modelvault-weights/sec-embed-v1.safetensors,mdl-embed-03,GetObject,SUCCESS,524288000,0.15,false
+mdl-evt-401,2026-08-20T10:12:00Z,2026-08-20T10:12:00Z,MODEL,usr-002,arn:aws:iam::123456789012:user/bob.mle,10.0.1.25,arn:aws:sagemaker:us-east-1:123456789012:endpoint/mdl-embed-03,mdl-embed-03,InvokeEndpoint,SUCCESS,0,0.08,false
+iam-evt-102,2026-08-20T10:15:45Z,2026-08-20T10:15:45Z,IAM,usr-003,arn:aws:iam::123456789012:user/charlie.compromised,198.51.100.42,arn:aws:iam::123456789012:user/charlie.compromised,,CreateAccessKey,SUCCESS,0,0.85,true
+iam-evt-103,2026-08-20T10:17:01Z,2026-08-20T10:17:01Z,IAM,usr-003,arn:aws:iam::123456789012:user/charlie.compromised,198.51.100.42,arn:aws:iam::123456789012:role/AdminAccess,,AssumeRole,SUCCESS,0,0.90,true
+ec2-evt-202,2026-08-20T10:18:22Z,2026-08-20T10:18:22Z,EC2,usr-003,arn:aws:iam::123456789012:user/charlie.compromised,198.51.100.42,arn:aws:ec2:us-east-1:123456789012:instance/i-0987654321fedcba0,,RunInstances,SUCCESS,4096,0.75,true
+s3-evt-302,2026-08-20T10:20:15Z,2026-08-20T10:20:15Z,S3,usr-003,arn:aws:iam::123456789012:user/charlie.compromised,198.51.100.42,s3://modelvault-weights/llm-cyber-v1.bin,mdl-llm-01,GetObject,SUCCESS,14000000000,0.98,true
+mdl-evt-402,2026-08-20T10:22:00Z,2026-08-20T10:22:00Z,MODEL,usr-003,arn:aws:iam::123456789012:user/charlie.compromised,198.51.100.42,arn:aws:sagemaker:us-east-1:123456789012:endpoint/mdl-llm-01,mdl-llm-01,InvokeEndpoint,SUCCESS,0,0.95,true

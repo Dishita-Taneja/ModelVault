@@ -27,7 +27,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [reviewedFilter, setReviewedFilter] = useState('ALL');
 
-  // Debounced filters (300ms) per requirement #3
+  // Debounced filters (300ms)
   const debouncedSearch = useDebounce(searchQuery, 300);
   const debouncedStartDate = useDebounce(customStartDate, 300);
   const debouncedEndDate = useDebounce(customEndDate, 300);
@@ -35,26 +35,28 @@ export default function Dashboard() {
   // 1. Fetch Users for Filter Dropdown
   const { data: usersList = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: api.getUsers,
+    queryFn: () => api.getUsers(),
     staleTime: 5 * 60 * 1000,
   });
 
   const uniqueUsers = useMemo(() => {
-    return usersList.map((u) => u.username || u.name || u).filter(Boolean);
+    const list = usersList.map((u) => u.username || u.name || u.user_id || u).filter(Boolean);
+    return Array.from(new Set(list));
   }, [usersList]);
 
   // 2. Fetch Models for Filter Dropdown
   const { data: modelsList = [] } = useQuery({
     queryKey: ['models'],
-    queryFn: api.getModels,
+    queryFn: () => api.getModels(),
     staleTime: 5 * 60 * 1000,
   });
 
   const uniqueModels = useMemo(() => {
-    return modelsList.map((m) => m.name || m.model_name || m).filter(Boolean);
+    const list = modelsList.map((m) => m.name || m.model_name || m.model_id || m).filter(Boolean);
+    return Array.from(new Set(list));
   }, [modelsList]);
 
-  // 3. Fetch Telemetry Stats
+  // 3. Fetch Telemetry Stats from /dashboard/summary
   const {
     data: stats,
     isLoading: isStatsLoading,
@@ -62,7 +64,7 @@ export default function Dashboard() {
     error: statsError,
   } = useQuery({
     queryKey: ['dashboard', 'stats'],
-    queryFn: api.getStats,
+    queryFn: () => api.getStats(),
     staleTime: 30 * 1000,
   });
 
@@ -74,7 +76,7 @@ export default function Dashboard() {
     error: topError,
   } = useQuery({
     queryKey: ['dashboard', 'top-suspicious'],
-    queryFn: api.getTopSuspicious,
+    queryFn: () => api.getTopSuspicious(),
     staleTime: 30 * 1000,
   });
 
@@ -122,26 +124,26 @@ export default function Dashboard() {
     staleTime: 30 * 1000,
   });
 
-  // Client-side supplementary filter for instantaneous text response and local fields
+  // Client-side supplementary filter
   const filteredModels = useMemo(() => {
     return rawFlaggedModels.filter((item) => {
-      // 1. Search Query filter (name, reason, id)
+      // 1. Search Query filter (name, reason, id, owner)
       if (debouncedSearch.trim() !== '') {
         const query = debouncedSearch.toLowerCase();
         const matchesName = item.model_name?.toLowerCase().includes(query);
         const matchesReason = item.reason?.toLowerCase().includes(query);
-        const matchesOwner = item.owner?.toLowerCase().includes(query);
+        const matchesOwner = item.owner?.toLowerCase().includes(query) || item.user_id?.toLowerCase().includes(query);
         const matchesId = item.model_id?.toLowerCase().includes(query);
         if (!matchesName && !matchesReason && !matchesOwner && !matchesId) return false;
       }
 
       // 2. User Filter
-      if (selectedUser !== 'ALL' && item.owner !== selectedUser) {
+      if (selectedUser !== 'ALL' && item.owner !== selectedUser && item.user_id !== selectedUser) {
         return false;
       }
 
       // 3. Model Filter
-      if (selectedModel !== 'ALL' && item.model_name !== selectedModel) {
+      if (selectedModel !== 'ALL' && item.model_name !== selectedModel && item.model_id !== selectedModel) {
         return false;
       }
 
@@ -176,39 +178,33 @@ export default function Dashboard() {
     debouncedEndDate,
   ]);
 
-  // 6. Optimistic Reviewed Status Mutation (Requirement #5)
+  // Optimistic Reviewed Status Mutation
   const reviewMutation = useMutation({
     mutationFn: ({ modelId, newReviewed }) => api.reviewFlaggedModel(modelId, newReviewed),
     onMutate: async ({ modelId, newReviewed }) => {
-      // Cancel outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey: ['dashboard'] });
 
-      // Snapshot previous values
       const previousFlagged = queryClient.getQueryData(flaggedModelsQueryKey);
       const previousTop = queryClient.getQueryData(['dashboard', 'top-suspicious']);
       const previousStats = queryClient.getQueryData(['dashboard', 'stats']);
 
-      // Optimistically update Flagged Models list
       queryClient.setQueryData(flaggedModelsQueryKey, (old) => {
         if (!old) return [];
-        return old.map((m) => (m.model_id === modelId ? { ...m, reviewed: newReviewed } : m));
+        return old.map((m) => (m.model_id === modelId || m.id === modelId ? { ...m, reviewed: newReviewed } : m));
       });
 
-      // Optimistically update Top 3 Suspicious
       queryClient.setQueryData(['dashboard', 'top-suspicious'], (old) => {
         if (!old) return [];
-        return old.map((m) => (m.model_id === modelId ? { ...m, reviewed: newReviewed } : m));
+        return old.map((m) => (m.model_id === modelId || m.id === modelId ? { ...m, reviewed: newReviewed } : m));
       });
 
-      // Update selected drawer model if active
       setSelectedModelForDrawer((prev) =>
-        prev && prev.model_id === modelId ? { ...prev, reviewed: newReviewed } : prev
+        prev && (prev.model_id === modelId || prev.id === modelId) ? { ...prev, reviewed: newReviewed } : prev
       );
 
       return { previousFlagged, previousTop, previousStats };
     },
     onError: (err, variables, context) => {
-      // Rollback to previous state on failure
       if (context?.previousFlagged) {
         queryClient.setQueryData(flaggedModelsQueryKey, context.previousFlagged);
       }
@@ -220,10 +216,9 @@ export default function Dashboard() {
       }
 
       setSelectedModelForDrawer((prev) =>
-        prev && prev.model_id === variables.modelId ? { ...prev, reviewed: !variables.newReviewed } : prev
+        prev && (prev.model_id === variables.modelId || prev.id === variables.modelId) ? { ...prev, reviewed: !variables.newReviewed } : prev
       );
 
-      // Show visible error toast per requirement #5
       addToast({
         title: 'Triage Update Failed',
         message: `Could not sync triage status for model ${variables.modelId}. Reverting changes. (${err.message})`,
@@ -233,24 +228,21 @@ export default function Dashboard() {
     onSuccess: (data, variables) => {
       addToast({
         title: variables.newReviewed ? 'Incident Marked Reviewed' : 'Incident Re-Opened',
-        message: `Triage record for model ${variables.modelId} updated in immutable audit log.`,
+        message: `Triage record for model ${variables.modelId} updated in audit log.`,
         type: 'success',
       });
-      // Invalidate queries to sync authoritative server state
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 
   const handleToggleReviewed = (modelId) => {
-    // Find current review state
-    const target = rawFlaggedModels.find((m) => m.model_id === modelId) ||
-      topSuspicious.find((m) => m.model_id === modelId) ||
+    const target = rawFlaggedModels.find((m) => m.model_id === modelId || m.id === modelId) ||
+      topSuspicious.find((m) => m.model_id === modelId || m.id === modelId) ||
       selectedModelForDrawer;
     const currentReviewed = target?.reviewed || false;
     reviewMutation.mutate({ modelId, newReviewed: !currentReviewed });
   };
 
-  // Trigger manual refresh for all dashboard queries
   const isRefreshing = isStatsRefetching || isTopRefetching || isFlaggedRefetching;
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -353,13 +345,13 @@ export default function Dashboard() {
               models={filteredModels}
               onSelectModel={setSelectedModelForDrawer}
               onToggleReviewed={handleToggleReviewed}
-              selectedModelId={selectedModelForDrawer?.model_id}
+              selectedModelId={selectedModelForDrawer?.model_id || selectedModelForDrawer?.id}
             />
           )}
         </section>
       </main>
 
-      {/* Evidence Side Drawer Modal (Lazily queries evidence on demand) */}
+      {/* Evidence Side Drawer Modal */}
       <EvidenceDrawer
         model={selectedModelForDrawer}
         onClose={() => setSelectedModelForDrawer(null)}

@@ -1,0 +1,22 @@
+[
+  {
+    "event_id": "s3-evt-301",
+    "timestamp": "2026-08-20T10:10:00Z",
+    "bucket": "modelvault-weights",
+    "key": "sec-embed-v1.safetensors",
+    "requester_arn": "arn:aws:iam::123456789012:user/bob.mle",
+    "source_ip": "10.0.1.25",
+    "bytes_sent": 524288000,
+    "http_status": 200
+  },
+  {
+    "event_id": "s3-evt-302",
+    "timestamp": "2026-08-20T10:20:15Z",
+    "bucket": "modelvault-weights",
+    "key": "llm-cyber-v1.bin",
+    "requester_arn": "arn:aws:iam::123456789012:user/charlie.compromised",
+    "source_ip": "198.51.100.42",
+    "bytes_sent": 14000000000,
+    "http_status": 200
+  }
+]

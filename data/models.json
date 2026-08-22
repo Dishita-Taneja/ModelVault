@@ -1,0 +1,32 @@
+[
+  {
+    "model_id": "mdl-llm-01",
+    "name": "LLM-Cyber-Classifier",
+    "description": "Fine-tuned LLaMA-3 model for threat intelligence classification.",
+    "framework": "PyTorch",
+    "s3_uri": "s3://modelvault-weights/llm-cyber-v1.bin",
+    "sensitivity_level": "CRITICAL",
+    "owner_email": "bob@modelvault.io",
+    "created_at": "2026-02-01T10:00:00Z"
+  },
+  {
+    "model_id": "mdl-fraud-02",
+    "name": "FraudDetect-XGBoost",
+    "description": "Gradient boosting model for transaction anomaly detection.",
+    "framework": "XGBoost",
+    "s3_uri": "s3://modelvault-weights/fraud-xgb-v2.json",
+    "sensitivity_level": "HIGH",
+    "owner_email": "alice@modelvault.io",
+    "created_at": "2026-02-05T14:20:00Z"
+  },
+  {
+    "model_id": "mdl-embed-03",
+    "name": "SecurityEmbeddings-v1",
+    "description": "Sentence transformer model generating embeddings for audit logs.",
+    "framework": "HuggingFace",
+    "s3_uri": "s3://modelvault-weights/sec-embed-v1.safetensors",
+    "sensitivity_level": "MEDIUM",
+    "owner_email": "charlie@modelvault.io",
+    "created_at": "2026-02-10T16:45:00Z"
+  }
+]

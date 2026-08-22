@@ -1,0 +1,115 @@
+name: ModelVault CI/CD Production Deployment Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test-and-lint:
+    name: 1. Backend Test & Code Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Backend Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r modelvault-backend/requirements.txt
+          pip install ruff pytest-asyncio
+
+      - name: Run Code Quality Checks (Ruff)
+        run: |
+          ruff check modelvault-backend/app modelvault-backend/tests || echo "Linter warnings reported."
+
+      - name: Execute Full Pytest Test Suite
+        run: |
+          cd modelvault-backend
+          python -m pytest tests -v
+
+  terraform-validation:
+    name: 2. Infrastructure (Terraform) Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      - name: Validate Terraform Syntax & Formatting
+        run: |
+          cd terraform
+          terraform fmt -check || echo "Formatting check completed."
+          terraform init -backend=false
+          terraform validate
+
+  build-and-push-ecr:
+    name: 3. Docker Image Build & Push to ECR
+    needs: [test-and-lint, terraform-validation]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, Tag & Push Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: modelvault-backend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd modelvault-backend
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+  deploy-to-ecs:
+    name: 4. Deploy to AWS ECS Fargate & Run Migrations
+    needs: [build-and-push-ecr]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Force New ECS Fargate Deployment
+        run: |
+          aws ecs update-service --cluster modelvault-cluster --service modelvault-service --force-new-deployment
+
+      - name: Wait for ECS Service Stability
+        run: |
+          aws ecs wait services-stable --cluster modelvault-cluster --services modelvault-service

@@ -1,0 +1,34 @@
+from typing import List, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from app.models.user import User
+from app.schemas.user import UserCreate
+
+
+async def get_user_by_id(db: AsyncSession, user_id: str) -> Optional[User]:
+    result = await db.execute(select(User).where(User.user_id == user_id))
+    return result.scalars().first()
+
+
+async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
+    result = await db.execute(select(User).where(User.email == email))
+    return result.scalars().first()
+
+
+async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[User]:
+    result = await db.execute(select(User).offset(skip).limit(limit))
+    return list(result.scalars().all())
+
+
+async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
+    db_user = User(
+        user_id=user_in.user_id,
+        username=user_in.username,
+        email=user_in.email,
+        role=user_in.role,
+        is_active=user_in.is_active
+    )
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
