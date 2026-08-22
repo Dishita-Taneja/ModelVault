@@ -24,20 +24,21 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: 'Backend/requirements.txt'
 
       - name: Install Backend Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r modelvault-backend/requirements.txt
+          pip install -r Backend/requirements.txt
           pip install ruff pytest-asyncio
 
       - name: Run Code Quality Checks (Ruff)
         run: |
-          ruff check modelvault-backend/app modelvault-backend/tests || echo "Linter warnings reported."
+          ruff check Backend/app Backend/tests || echo "Linter warnings reported."
 
       - name: Execute Full Pytest Test Suite
         run: |
-          cd modelvault-backend
+          cd Backend
           python -m pytest tests -v
 
   terraform-validation:
@@ -87,7 +88,7 @@ jobs:
           ECR_REPOSITORY: modelvault-backend
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          cd modelvault-backend
+          cd Backend
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
