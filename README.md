@@ -61,6 +61,7 @@ modelvault-backend/
 └── .env.example
 ```
 
+```
 modelvault-frontend/
 ├── index.html                  # HTML template with Google Fonts (JetBrains Mono & Inter)
 ├── package.json                # Dependencies: React 18, Tailwind CSS, Lucide icons, Vite
@@ -83,9 +84,10 @@ modelvault-frontend/
 │       ├── EvidenceDrawer.jsx      # Slide-out forensic log viewer with raw JSON export
 │       └── Skeletons.jsx           # Shimmer loading skeleton placeholders
 └──
+```
 
 
-
+```
 modelvault-backend/
 ├── app/
 │   ├── main.py                  # FastAPI application with CORS and routing
@@ -130,7 +132,7 @@ modelvault-backend/
 ├── .env.example
 ├── seed.py                      # Standalone async script to seed mock security data
 └── 
-
+```
 ---
 
 ## Setup & Quickstart
