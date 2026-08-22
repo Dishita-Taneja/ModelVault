@@ -1,0 +1,106 @@
+[
+  {
+    "user_id": "AIDA1E12E2D70A904F00",
+    "user_name": "johnsonjoshua",
+    "arn": "arn:aws:iam::123456789012:user/donaldgarcia",
+    "access_key_id": "AKIAA8EC382F70264CBA",
+    "home_ip": "196.89.6.126",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDA24E6B74E51B74691",
+    "user_name": "fjohnson",
+    "arn": "arn:aws:iam::123456789012:user/jesseguzman",
+    "access_key_id": "AKIAA51DD06476FB4D45",
+    "home_ip": "221.108.180.212",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDAC30E1DD5ED774161",
+    "user_name": "shaneramirez",
+    "arn": "arn:aws:iam::123456789012:user/blakeerik",
+    "access_key_id": "AKIAC669203167884C26",
+    "home_ip": "137.243.96.76",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDA720503BC41304CCE",
+    "user_name": "susanrogers",
+    "arn": "arn:aws:iam::123456789012:user/jamesmichael",
+    "access_key_id": "AKIAA84F8960B9EC4A87",
+    "home_ip": "177.99.242.44",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDAD119EB86BAC24FA8",
+    "user_name": "yherrera",
+    "arn": "arn:aws:iam::123456789012:user/arnoldmaria",
+    "access_key_id": "AKIAA558686D2BD243D0",
+    "home_ip": "197.114.80.115",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDAD7E3B94030FD436D",
+    "user_name": "janetwilliams",
+    "arn": "arn:aws:iam::123456789012:user/kendragalloway",
+    "access_key_id": "AKIA99A291518FF448E5",
+    "home_ip": "28.41.254.122",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDA672BC5F62602429A",
+    "user_name": "shawn52",
+    "arn": "arn:aws:iam::123456789012:user/michael41",
+    "access_key_id": "AKIAFC8563386B7646DD",
+    "home_ip": "200.250.175.183",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDA29BADC5B380841A3",
+    "user_name": "stevennelson",
+    "arn": "arn:aws:iam::123456789012:user/gabriellecameron",
+    "access_key_id": "AKIA9701E1B9B0E54DBA",
+    "home_ip": "66.13.238.40",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDA9C40BFB9E5844DB0",
+    "user_name": "richard13",
+    "arn": "arn:aws:iam::123456789012:user/jason76",
+    "access_key_id": "AKIA28C6C81A1E994FFE",
+    "home_ip": "216.121.229.251",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDA1A8C72341B434D30",
+    "user_name": "johnhoffman",
+    "arn": "arn:aws:iam::123456789012:user/julie69",
+    "access_key_id": "AKIA5CD344E665BE41A1",
+    "home_ip": "136.218.109.97",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDAAAB2352E2BC74502",
+    "user_name": "ddavis",
+    "arn": "arn:aws:iam::123456789012:user/hernandezernest",
+    "access_key_id": "AKIABE7E5716D40D482F",
+    "home_ip": "210.8.107.66",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDA269B30AF5AF843E1",
+    "user_name": "djames",
+    "arn": "arn:aws:iam::123456789012:user/tasha01",
+    "access_key_id": "AKIA2C0D15E83E1B4173",
+    "home_ip": "197.17.58.159",
+    "compromised": false
+  },
+  {
+    "user_id": "AIDA41F28DC35FCA40C7",
+    "user_name": "svc-mlplatform-ci",
+    "arn": "arn:aws:iam::123456789012:user/daniel62",
+    "access_key_id": "AKIAABCA419F6DE848CA",
+    "home_ip": "144.219.93.184",
+    "compromised": true
+  }
+]
