@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -29,19 +29,19 @@ class FeatureEngineeringPipeline:
 
     def extract_features(
         self,
-        events: list[dict[str, Any]],
-        models_metadata: list[dict[str, Any]] | None = None,
-        users_metadata: list[dict[str, Any]] | None = None
+        events: List[Dict[str, Any]],
+        models_metadata: Optional[List[Dict[str, Any]]] = None,
+        users_metadata: Optional[List[Dict[str, Any]]] = None
     ) -> pd.DataFrame:
         if not events:
-            return pd.DataFrame(columns=self.feature_names)
+            return pd.DataFrame(0.0, index=range(1), columns=self.feature_names)
 
         df = pd.DataFrame(events)
 
-        # Ensure required keys exist
+        # Ensure required columns exist with defaults
         if "bytes_transferred" not in df.columns:
             df["bytes_transferred"] = 0
-        df["bytes_transferred"] = df["bytes_transferred"].fillna(0).astype(float)
+        df["bytes_transferred"] = pd.to_numeric(df["bytes_transferred"], errors="coerce").fillna(0).astype(float)
 
         if "source" not in df.columns and "log_source" in df.columns:
             df["source"] = df["log_source"]
@@ -52,6 +52,16 @@ class FeatureEngineeringPipeline:
             df["event_name"] = df["action"]
         if "event_name" not in df.columns:
             df["event_name"] = "UNKNOWN"
+
+        if "user_id" not in df.columns and "user_name" in df.columns:
+            df["user_id"] = df["user_name"]
+        if "user_id" not in df.columns:
+            df["user_id"] = "usr-unknown"
+
+        if "ip_address" not in df.columns and "source_ip" in df.columns:
+            df["ip_address"] = df["source_ip"]
+        if "ip_address" not in df.columns:
+            df["ip_address"] = "127.0.0.1"
 
         # Model sensitivity map
         model_sens_map = {}
@@ -64,7 +74,7 @@ class FeatureEngineeringPipeline:
                     model_sens_map[model_id] = score
 
         # Build feature columns
-        df["bytes_transferred_log"] = np.log1p(df["bytes_transferred"])
+        df["bytes_transferred_log"] = np.log1p(df["bytes_transferred"].clip(lower=0))
         df["is_large_transfer"] = (df["bytes_transferred"] >= 1e9).astype(float)
 
         # Model weight access indicator
@@ -83,14 +93,17 @@ class FeatureEngineeringPipeline:
 
         # Time features
         def get_dt(row):
-            ts = row.get("event_time_raw") or row.get("timestamp")
+            ts = row.get("event_time_raw") or row.get("timestamp") or row.get("event_time")
             if isinstance(ts, str):
-                return parser.parse(ts)
+                try:
+                    return parser.parse(ts)
+                except Exception:
+                    return None
             return ts
 
         timestamps = df.apply(get_dt, axis=1)
-        df["hour_of_day"] = timestamps.apply(lambda dt: dt.hour if dt else 12)
-        df["day_of_week"] = timestamps.apply(lambda dt: dt.weekday() if dt else 0)
+        df["hour_of_day"] = timestamps.apply(lambda dt: dt.hour if hasattr(dt, "hour") else 12)
+        df["day_of_week"] = timestamps.apply(lambda dt: dt.weekday() if hasattr(dt, "weekday") else 0)
         df["is_off_hours"] = ((df["hour_of_day"] < 8) | (df["hour_of_day"] >= 18)).astype(float)
 
         # Model sensitivity
@@ -105,9 +118,8 @@ class FeatureEngineeringPipeline:
         df["model_sensitivity_score"] = df.apply(get_model_sens, axis=1)
 
         # User access frequency
-        user_col = "user_id" if "user_id" in df.columns else "user_name"
-        user_counts = df[user_col].value_counts().to_dict()
-        df["user_access_frequency"] = df[user_col].map(user_counts).fillna(1.0).astype(float)
+        user_counts = df["user_id"].value_counts().to_dict()
+        df["user_access_frequency"] = df["user_id"].map(user_counts).fillna(1.0).astype(float)
 
         # Privileged action indicator
         df["is_privileged_action"] = df["event_name"].apply(
@@ -115,17 +127,18 @@ class FeatureEngineeringPipeline:
         )
 
         # Cross-source count
-        ip_col = "ip_address" if "ip_address" in df.columns else "source_ip"
-        ip_counts = df[ip_col].value_counts().to_dict()
-        df["cross_source_count"] = df[ip_col].map(ip_counts).fillna(1.0).astype(float)
+        ip_counts = df["ip_address"].value_counts().to_dict()
+        df["cross_source_count"] = df["ip_address"].map(ip_counts).fillna(1.0).astype(float)
 
-        return df[self.feature_names]
+        # Fill any remaining NaNs cleanly
+        feature_df = df[self.feature_names].fillna(0.0)
+        return feature_df
 
     def fit_transform(
         self,
-        events: list[dict[str, Any]],
-        models_metadata: list[dict[str, Any]] | None = None,
-        users_metadata: list[dict[str, Any]] | None = None
+        events: List[Dict[str, Any]],
+        models_metadata: Optional[List[Dict[str, Any]]] = None,
+        users_metadata: Optional[List[Dict[str, Any]]] = None
     ) -> np.ndarray:
         X_df = self.extract_features(events, models_metadata, users_metadata)
         X_scaled = self.scaler.fit_transform(X_df)
@@ -134,9 +147,9 @@ class FeatureEngineeringPipeline:
 
     def transform(
         self,
-        events: list[dict[str, Any]],
-        models_metadata: list[dict[str, Any]] | None = None,
-        users_metadata: list[dict[str, Any]] | None = None
+        events: List[Dict[str, Any]],
+        models_metadata: Optional[List[Dict[str, Any]]] = None,
+        users_metadata: Optional[List[Dict[str, Any]]] = None
     ) -> np.ndarray:
         X_df = self.extract_features(events, models_metadata, users_metadata)
         if not self.is_fitted:

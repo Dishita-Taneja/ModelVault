@@ -75,7 +75,7 @@ async def run_training_pipeline(
             "p75": float(np.percentile(scores, 75)),
             "p90": float(np.percentile(scores, 90))
         },
-        "threshold": float(detector.threshold),
+        "threshold": float(detector.threshold_norm),
         "training_time_ms": training_time_ms
     }
 
