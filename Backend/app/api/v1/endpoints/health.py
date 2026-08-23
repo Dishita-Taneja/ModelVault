@@ -1,7 +1,7 @@
-from fastapi import APIRouter
-from app.schemas.health import RootHealthResponse, DetailedHealthResponse
 from app.core.config import settings
 from app.core.database import check_db_connection
+from app.schemas.health import DetailedHealthResponse
+from fastapi import APIRouter
 
 router = APIRouter()
 

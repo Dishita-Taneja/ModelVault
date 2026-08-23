@@ -1,16 +1,16 @@
 import datetime
-from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
 
 class MLModelBase(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     framework: str = "PyTorch"
     s3_uri: str
     sensitivity_level: str = "HIGH"
-    owner_id: Optional[str] = None
-    owner_email: Optional[str] = None
+    owner_id: str | None = None
+    owner_email: str | None = None
 
 
 class MLModelCreate(MLModelBase):

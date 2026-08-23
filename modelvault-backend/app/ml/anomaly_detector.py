@@ -1,5 +1,5 @@
+
 import numpy as np
-from typing import Dict, Any, List, Tuple
 from sklearn.ensemble import IsolationForest
 
 
@@ -43,7 +43,7 @@ class AnomalyDetector:
         norm_scores = (raw_scores - min_s) / denom
         return norm_scores
 
-    def predict_anomalies(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def predict_anomalies(self, X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         norm_scores = self.predict_scores(X)
         # Flag as anomaly if normalized score >= 0.70 or raw_score >= threshold
         anomalies = norm_scores >= 0.65

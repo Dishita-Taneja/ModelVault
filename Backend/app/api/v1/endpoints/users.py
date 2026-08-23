@@ -1,22 +1,22 @@
-from typing import List, Optional
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
-from app.schemas.user import UserResponse, UserCreate
-from app.schemas.investigation import InvestigationTimelineResponse
+from app.core.exceptions import ResourceNotFoundError
 from app.correlation.engine import CrossSourceCorrelationEngine
 from app.crud import crud_user
-from app.core.exceptions import ResourceNotFoundError
+from app.schemas.investigation import InvestigationTimelineResponse
+from app.schemas.user import UserCreate, UserResponse
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
 
-@router.get("", response_model=List[UserResponse], tags=["Users"])
-@router.get("/", response_model=List[UserResponse], tags=["Users"])
+@router.get("", response_model=list[UserResponse], tags=["Users"])
+@router.get("/", response_model=list[UserResponse], tags=["Users"])
 async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
-    role: Optional[str] = Query(None, description="Filter by user role"),
+    role: str | None = Query(None, description="Filter by user role"),
     db: AsyncSession = Depends(get_db)
 ):
     """Retrieves all registered IAM/Analyst users with optional role filtering and pagination."""

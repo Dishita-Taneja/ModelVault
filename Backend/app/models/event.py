@@ -1,7 +1,8 @@
 import datetime
-from typing import Optional
-from sqlalchemy import String, Float, Boolean, BigInteger, DateTime, ForeignKey, JSON
+
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.core.database import Base
 
 
@@ -12,12 +13,12 @@ class NormalizedEvent(Base):
     source: Mapped[str] = mapped_column(String(32), index=True, nullable=False)  # IAM, EC2, S3, MODEL
     event_time_raw: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     event_time_reconciled: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    user_id: Mapped[Optional[str]] = mapped_column(String(64), ForeignKey("users.user_id"), nullable=True)
-    user_name: Mapped[Optional[str]] = mapped_column(String(255), index=True, nullable=True)  # user_arn / username
-    ip_address: Mapped[Optional[str]] = mapped_column(String(64), index=True, nullable=True)  # source_ip
+    user_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("users.user_id"), nullable=True)
+    user_name: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)  # user_arn / username
+    ip_address: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)  # source_ip
     event_name: Mapped[str] = mapped_column(String(128), nullable=False)  # action
-    model_id: Mapped[Optional[str]] = mapped_column(String(64), ForeignKey("ml_models.model_id"), nullable=True)
-    region: Mapped[Optional[str]] = mapped_column(String(32), default="us-east-1", nullable=True)
+    model_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("ml_models.model_id"), nullable=True)
+    region: Mapped[str | None] = mapped_column(String(32), default="us-east-1", nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="SUCCESS", nullable=False)
     bytes_transferred: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     risk_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
@@ -38,11 +39,11 @@ class NormalizedEvent(Base):
         return self.source
 
     @property
-    def user_arn(self) -> Optional[str]:
+    def user_arn(self) -> str | None:
         return self.user_name
 
     @property
-    def source_ip(self) -> Optional[str]:
+    def source_ip(self) -> str | None:
         return self.ip_address
 
     @property
@@ -50,7 +51,7 @@ class NormalizedEvent(Base):
         return self.event_name
 
     @property
-    def resource_arn(self) -> Optional[str]:
+    def resource_arn(self) -> str | None:
         return self.extra.get("resource_arn") if isinstance(self.extra, dict) else None
 
     model = relationship("MLModel", back_populates="events")

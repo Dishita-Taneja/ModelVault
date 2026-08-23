@@ -1,21 +1,25 @@
 import datetime
-from typing import List, Dict, Any, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from app.core.exceptions import ResourceNotFoundError
+from app.core.logging import logger
+from app.exfiltration.config import ExfiltrationConfig, default_exfiltration_config
 from app.models import (
-    NormalizedEvent, MLModel, User, AnomalyResult, ExfiltrationAssessment, DataLineage
+    AnomalyResult,
+    DataLineage,
+    ExfiltrationAssessment,
+    MLModel,
+    NormalizedEvent,
 )
 from app.schemas.exfiltration import ExfiltrationResponse
-from app.exfiltration.config import ExfiltrationConfig, default_exfiltration_config
-from app.core.logging import logger
-from app.core.exceptions import ResourceNotFoundError
 
 WEIGHT_EXTENSIONS = {".bin", ".safetensors", ".pt", ".onnx", ".pth", ".h5", ".ckpt", ".bin.gz"}
 
 
 class ExfiltrationDetector:
-    def __init__(self, db: AsyncSession, config: Optional[ExfiltrationConfig] = None):
+    def __init__(self, db: AsyncSession, config: ExfiltrationConfig | None = None):
         self.db = db
         self.config = config or default_exfiltration_config
 
@@ -143,7 +147,7 @@ class ExfiltrationDetector:
 
         return "CLOUD_ACTIVITY"
 
-    async def _fetch_user_session_events(self, target_event: NormalizedEvent) -> List[NormalizedEvent]:
+    async def _fetch_user_session_events(self, target_event: NormalizedEvent) -> list[NormalizedEvent]:
         query = select(NormalizedEvent).order_by(NormalizedEvent.event_time_reconciled.asc())
         if target_event.user_id:
             query = query.where(
@@ -159,10 +163,10 @@ class ExfiltrationDetector:
         self,
         event: NormalizedEvent,
         event_type: str,
-        model_obj: Optional[MLModel],
-        anomaly_obj: Optional[AnomalyResult],
-        session_events: List[NormalizedEvent]
-    ) -> Tuple[float, List[str], List[str]]:
+        model_obj: MLModel | None,
+        anomaly_obj: AnomalyResult | None,
+        session_events: list[NormalizedEvent]
+    ) -> tuple[float, list[str], list[str]]:
         score = 0.0
         evidence = []
         reasons = []
@@ -197,7 +201,7 @@ class ExfiltrationDetector:
             elif sens == "HIGH":
                 score += self.config.weight_high_sensitivity
                 evidence.append(f"Target model '{model_obj.name}' ({model_obj.model_id}) has HIGH sensitivity level.")
-                reasons.append(f"HIGH sensitivity model target")
+                reasons.append("HIGH sensitivity model target")
 
         # 4. ML Anomaly Score contribution
         if anomaly_obj and anomaly_obj.anomaly_score >= 0.60:
@@ -212,7 +216,7 @@ class ExfiltrationDetector:
             score += self.config.weight_privileged_iam_precursor
             pr_names = [f"{e.event_id} ({e.event_name})" for e in iam_precursors]
             evidence.append(f"Session preceded by privileged IAM operations: {', '.join(pr_names)}.")
-            reasons.append(f"preceded by privileged IAM key creation/role assumption")
+            reasons.append("preceded by privileged IAM key creation/role assumption")
 
         # 6. External IP address check
         if event.ip_address and not (event.ip_address.startswith("10.") or event.ip_address.startswith("192.168.")):

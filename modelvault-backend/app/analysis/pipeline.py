@@ -1,26 +1,33 @@
 import time
-import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.ingestion.service import IngestionService
-from app.reconciliation.engine import ReconciliationEngine
-from app.ml.training import run_training_pipeline
-from app.ml.model_manager import model_manager
-from app.exfiltration.detector import ExfiltrationDetector
-from app.correlation.engine import CrossSourceCorrelationEngine
-from app.models import (
-    NormalizedEvent, MLModel, User, AnomalyResult, ReconciliationResult, ExfiltrationAssessment, SuspiciousEvent, DataLineage
-)
-from app.schemas.suspicious_event import PipelineExecutionReport, SuspiciousEventResponse
 from app.analysis.config import AnalysisConfig, default_analysis_config
 from app.core.logging import logger
+from app.correlation.engine import CrossSourceCorrelationEngine
+from app.exfiltration.detector import ExfiltrationDetector
+from app.ingestion.service import IngestionService
+from app.ml.model_manager import model_manager
+from app.ml.training import run_training_pipeline
+from app.models import (
+    AnomalyResult,
+    DataLineage,
+    MLModel,
+    NormalizedEvent,
+    SuspiciousEvent,
+)
+from app.reconciliation.engine import ReconciliationEngine
+from app.schemas.suspicious_event import (
+    PipelineExecutionReport,
+    SuspiciousEventResponse,
+)
 
 
 class AnalysisPipeline:
-    def __init__(self, db: AsyncSession, data_dir: Optional[Path] = None, config: Optional[AnalysisConfig] = None):
+    def __init__(self, db: AsyncSession, data_dir: Path | None = None, config: AnalysisConfig | None = None):
         self.db = db
         self.data_dir = data_dir
         self.config = config or default_analysis_config
@@ -57,7 +64,7 @@ class AnalysisPipeline:
         exfil_detector = ExfiltrationDetector(self.db)
         corr_engine = CrossSourceCorrelationEngine(self.db)
 
-        suspicious_events_out: List[SuspiciousEventResponse] = []
+        suspicious_events_out: list[SuspiciousEventResponse] = []
         exfil_count = 0
 
         # Step 5: Unified Suspicious Event Synthesis
@@ -214,7 +221,7 @@ class AnalysisPipeline:
 
         return float(min(100.0, max(0.0, score)))
 
-    def _assign_severity(self, risk_score: float, exfil_resp: Any, model_obj: Optional[MLModel]) -> str:
+    def _assign_severity(self, risk_score: float, exfil_resp: Any, model_obj: MLModel | None) -> str:
         if risk_score >= self.config.critical_severity_threshold or (exfil_resp.weight_exfiltration_suspected and model_obj and model_obj.sensitivity_level in ["CRITICAL", "HIGH"]):
             return "CRITICAL"
         elif risk_score >= self.config.high_severity_threshold or exfil_resp.weight_exfiltration_suspected:

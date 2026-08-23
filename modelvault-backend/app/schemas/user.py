@@ -1,6 +1,6 @@
 import datetime
-from typing import Optional
-from pydantic import BaseModel, EmailStr, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class UserBase(BaseModel):
@@ -11,7 +11,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    user_id: Optional[str] = None
+    user_id: str | None = None
 
 
 class UserResponse(UserBase):

@@ -1,12 +1,12 @@
 import datetime
-from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
 
 class AlertBase(BaseModel):
     event_id: str
-    model_id: Optional[str] = None
-    user_arn: Optional[str] = None
+    model_id: str | None = None
+    user_arn: str | None = None
     risk_score: float
     severity: str = "CRITICAL"
     title: str

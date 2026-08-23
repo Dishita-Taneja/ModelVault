@@ -1,7 +1,20 @@
-from fastapi import APIRouter
 from app.api.v1.endpoints import (
-    health, users, models, events, alerts, ingestion, reconciliation, ml, investigations, exfiltration, analysis, suspicious_events, dashboard, anomalies
+    alerts,
+    analysis,
+    anomalies,
+    dashboard,
+    events,
+    exfiltration,
+    health,
+    ingestion,
+    investigations,
+    ml,
+    models,
+    reconciliation,
+    suspicious_events,
+    users,
 )
+from fastapi import APIRouter
 
 api_router = APIRouter()
 

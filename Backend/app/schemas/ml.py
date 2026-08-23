@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Dict, Any, Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -15,17 +15,17 @@ class TrainResponse(BaseModel):
     total_events: int
     flagged_anomalous_count: int
     threshold: float
-    anomaly_score_distribution: Dict[str, float]
+    anomaly_score_distribution: dict[str, float]
 
 
 class AnomalyResultResponse(BaseModel):
     event_id: str
-    user_id: Optional[str] = None
-    model_id: Optional[str] = None
+    user_id: str | None = None
+    model_id: str | None = None
     source: str
     anomaly_score: float
     is_anomaly: bool
-    feature_values: Dict[str, float] = Field(default_factory=dict)
+    feature_values: dict[str, float] = Field(default_factory=dict)
     model_version: str
     detected_at: datetime.datetime
 
@@ -37,4 +37,4 @@ class DetectionReportResponse(BaseModel):
     detection_time_ms: float
     total_events_evaluated: int
     anomalies_detected_count: int
-    results: List[AnomalyResultResponse] = Field(default_factory=list)
+    results: list[AnomalyResultResponse] = Field(default_factory=list)

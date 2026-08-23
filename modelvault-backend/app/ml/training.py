@@ -1,21 +1,22 @@
 import time
+from typing import Any
+
 import numpy as np
-from typing import List, Dict, Any, Tuple, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.models import NormalizedEvent, MLModel, User, Alert, DataLineage
-from app.ml.feature_engineering import FeatureEngineeringPipeline
-from app.ml.anomaly_detector import AnomalyDetector
-from app.ml.model_manager import ModelManager, model_manager
 from app.core.logging import logger
+from app.ml.anomaly_detector import AnomalyDetector
+from app.ml.feature_engineering import FeatureEngineeringPipeline
+from app.ml.model_manager import model_manager
+from app.models import DataLineage, MLModel, NormalizedEvent, User
 
 
 async def run_training_pipeline(
     db: AsyncSession,
     model_version: str = "v1.0.0",
     contamination: float = 0.33
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     start_time = time.time()
     logger.info("Starting ML Training Pipeline...")
 

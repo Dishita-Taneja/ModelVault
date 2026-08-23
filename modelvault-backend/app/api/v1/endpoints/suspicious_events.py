@@ -1,28 +1,27 @@
 import datetime
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from app.core.database import get_db
+from app.core.exceptions import ResourceNotFoundError
 from app.models.suspicious_event import SuspiciousEvent
 from app.schemas.suspicious_event import SuspiciousEventResponse
-from app.core.exceptions import ResourceNotFoundError
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 router = APIRouter()
 
 
-@router.get("", response_model=List[SuspiciousEventResponse], tags=["Suspicious Events"])
-@router.get("/", response_model=List[SuspiciousEventResponse], tags=["Suspicious Events"])
+@router.get("", response_model=list[SuspiciousEventResponse], tags=["Suspicious Events"])
+@router.get("/", response_model=list[SuspiciousEventResponse], tags=["Suspicious Events"])
 async def list_suspicious_events(
-    user_id: Optional[str] = Query(None, description="Filter by User ID"),
-    user: Optional[str] = Query(None, description="Filter by User ID/Name alias"),
-    model_id: Optional[str] = Query(None, description="Filter by Model ID"),
-    model: Optional[str] = Query(None, description="Filter by Model ID alias"),
-    severity: Optional[str] = Query(None, description="Filter by severity: LOW, MEDIUM, HIGH, CRITICAL"),
-    exfiltration_suspected: Optional[bool] = Query(None, description="Filter by exfiltration flag"),
-    start_time: Optional[datetime.datetime] = Query(None, description="Filter events after start_time"),
-    end_time: Optional[datetime.datetime] = Query(None, description="Filter events before end_time"),
+    user_id: str | None = Query(None, description="Filter by User ID"),
+    user: str | None = Query(None, description="Filter by User ID/Name alias"),
+    model_id: str | None = Query(None, description="Filter by Model ID"),
+    model: str | None = Query(None, description="Filter by Model ID alias"),
+    severity: str | None = Query(None, description="Filter by severity: LOW, MEDIUM, HIGH, CRITICAL"),
+    exfiltration_suspected: bool | None = Query(None, description="Filter by exfiltration flag"),
+    start_time: datetime.datetime | None = Query(None, description="Filter events after start_time"),
+    end_time: datetime.datetime | None = Query(None, description="Filter events before end_time"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: AsyncSession = Depends(get_db)
@@ -55,7 +54,7 @@ async def list_suspicious_events(
     return list(res.scalars().all())
 
 
-@router.get("/top", response_model=List[SuspiciousEventResponse], tags=["Suspicious Events"])
+@router.get("/top", response_model=list[SuspiciousEventResponse], tags=["Suspicious Events"])
 async def get_top_suspicious_events(
     limit: int = Query(3, ge=1, le=10),
     db: AsyncSession = Depends(get_db)

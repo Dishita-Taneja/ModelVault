@@ -1,22 +1,22 @@
-from typing import List, Optional
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
-from app.schemas.model import MLModelResponse, MLModelCreate
-from app.schemas.investigation import InvestigationTimelineResponse
+from app.core.exceptions import ResourceNotFoundError
 from app.correlation.engine import CrossSourceCorrelationEngine
 from app.crud import crud_model
-from app.core.exceptions import ResourceNotFoundError
+from app.schemas.investigation import InvestigationTimelineResponse
+from app.schemas.model import MLModelCreate, MLModelResponse
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
 
-@router.get("", response_model=List[MLModelResponse], tags=["Models"])
-@router.get("/", response_model=List[MLModelResponse], tags=["Models"])
+@router.get("", response_model=list[MLModelResponse], tags=["Models"])
+@router.get("/", response_model=list[MLModelResponse], tags=["Models"])
 async def list_models(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
-    sensitivity_level: Optional[str] = Query(None, description="Filter by sensitivity: CRITICAL, HIGH, MEDIUM, LOW"),
+    sensitivity_level: str | None = Query(None, description="Filter by sensitivity: CRITICAL, HIGH, MEDIUM, LOW"),
     db: AsyncSession = Depends(get_db)
 ):
     """Retrieves all registered ML models with optional sensitivity filtering and pagination."""

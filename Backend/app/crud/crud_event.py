@@ -1,11 +1,11 @@
-from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+
 from app.models.event import NormalizedEvent
 from app.schemas.event import NormalizedEventCreate
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 
-async def get_event_by_id(db: AsyncSession, event_id: str) -> Optional[NormalizedEvent]:
+async def get_event_by_id(db: AsyncSession, event_id: str) -> NormalizedEvent | None:
     result = await db.execute(select(NormalizedEvent).where(NormalizedEvent.event_id == event_id))
     return result.scalars().first()
 
@@ -15,7 +15,7 @@ async def get_all_events(
     skip: int = 0,
     limit: int = 100,
     anomalous_only: bool = False
-) -> List[NormalizedEvent]:
+) -> list[NormalizedEvent]:
     query = select(NormalizedEvent)
     if anomalous_only:
         query = query.where(NormalizedEvent.anomaly_flag == True)

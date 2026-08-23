@@ -1,27 +1,35 @@
-import asyncio
 import datetime
-import pandas as pd
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+
+import pandas as pd
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.future import select
 
 from app.core.config import settings
 from app.core.database import Base
 from app.core.logging import logger
-from app.models import User, MLModel, NormalizedEvent, RawLog, DataLineage, Alert
-from app.schemas.event import IngestionReport
-from app.ingestion.loaders import load_json_file, load_csv_file
-from app.ingestion.schemas import (
-    IAMLogItem, EC2LogItem, S3LogItem, ModelAccessLogItem, UserItem, ModelItem
-)
+from app.ingestion.loaders import load_csv_file, load_json_file
 from app.ingestion.normalizer import (
-    normalize_iam_log, normalize_ec2_log, normalize_s3_log, normalize_model_access_log, parse_datetime
+    normalize_ec2_log,
+    normalize_iam_log,
+    normalize_model_access_log,
+    normalize_s3_log,
+    parse_datetime,
 )
+from app.ingestion.schemas import (
+    EC2LogItem,
+    IAMLogItem,
+    ModelAccessLogItem,
+    ModelItem,
+    S3LogItem,
+    UserItem,
+)
+from app.models import Alert, DataLineage, MLModel, NormalizedEvent, RawLog, User
+from app.schemas.event import IngestionReport
 
 
 class IngestionService:
-    def __init__(self, data_dir: Optional[Path] = None):
+    def __init__(self, data_dir: Path | None = None):
         if data_dir is None:
             self.data_dir = Path(__file__).resolve().parent.parent.parent.parent / "data"
         else:
@@ -151,7 +159,7 @@ class IngestionService:
 
         await db.commit()
 
-    async def _ingest_iam_logs(self, db: AsyncSession, file_path: Path, user_map: Dict[str, str], report: IngestionReport):
+    async def _ingest_iam_logs(self, db: AsyncSession, file_path: Path, user_map: dict[str, str], report: IngestionReport):
         raw_logs = load_json_file(file_path)
         source_key = "iam_logs.json"
         report.records_processed[source_key] = len(raw_logs)
@@ -204,7 +212,7 @@ class IngestionService:
 
         await db.commit()
 
-    async def _ingest_ec2_logs(self, db: AsyncSession, file_path: Path, ip_user_map: Dict[str, str], report: IngestionReport):
+    async def _ingest_ec2_logs(self, db: AsyncSession, file_path: Path, ip_user_map: dict[str, str], report: IngestionReport):
         raw_logs = load_json_file(file_path)
         source_key = "ec2_logs.json"
         report.records_processed[source_key] = len(raw_logs)
@@ -261,8 +269,8 @@ class IngestionService:
         self,
         db: AsyncSession,
         file_path: Path,
-        user_map: Dict[str, str],
-        s3_model_map: Dict[str, str],
+        user_map: dict[str, str],
+        s3_model_map: dict[str, str],
         report: IngestionReport
     ):
         raw_logs = load_json_file(file_path)
@@ -317,7 +325,7 @@ class IngestionService:
 
         await db.commit()
 
-    async def _ingest_model_access_logs(self, db: AsyncSession, file_path: Path, user_map: Dict[str, str], report: IngestionReport):
+    async def _ingest_model_access_logs(self, db: AsyncSession, file_path: Path, user_map: dict[str, str], report: IngestionReport):
         raw_logs = load_json_file(file_path)
         source_key = "model_access_logs.json"
         report.records_processed[source_key] = len(raw_logs)
@@ -466,7 +474,7 @@ class IngestionService:
         )
         db.add(lineage)
 
-    async def _build_user_map(self, db: AsyncSession) -> Dict[str, str]:
+    async def _build_user_map(self, db: AsyncSession) -> dict[str, str]:
         res = await db.execute(select(User))
         users = res.scalars().all()
         user_map = {}
@@ -475,7 +483,7 @@ class IngestionService:
             user_map[u.email] = u.user_id
         return user_map
 
-    async def _build_ip_user_map(self, db: AsyncSession) -> Dict[str, str]:
+    async def _build_ip_user_map(self, db: AsyncSession) -> dict[str, str]:
         res = await db.execute(select(NormalizedEvent).where(NormalizedEvent.source == "IAM"))
         iam_events = res.scalars().all()
         ip_map = {}
@@ -484,7 +492,7 @@ class IngestionService:
                 ip_map[evt.ip_address] = evt.user_id
         return ip_map
 
-    async def _build_s3_model_map(self, db: AsyncSession) -> Dict[str, str]:
+    async def _build_s3_model_map(self, db: AsyncSession) -> dict[str, str]:
         res = await db.execute(select(MLModel))
         models = res.scalars().all()
         s3_map = {}
@@ -496,7 +504,7 @@ class IngestionService:
         return s3_map
 
 
-async def run_ingestion_pipeline(data_dir: Optional[Path] = None) -> IngestionReport:
+async def run_ingestion_pipeline(data_dir: Path | None = None) -> IngestionReport:
     db_url = settings.async_database_url
     try:
         engine_inst = create_async_engine(db_url, echo=False, future=True)

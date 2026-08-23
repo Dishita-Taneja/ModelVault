@@ -1,8 +1,8 @@
-from fastapi import Request, HTTPException
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
 from app.core.exceptions import ModelVaultError
 from app.core.logging import logger
+from fastapi import HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 
 async def modelvault_exception_handler(request: Request, exc: ModelVaultError):

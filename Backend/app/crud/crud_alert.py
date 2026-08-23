@@ -1,16 +1,16 @@
-from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+
 from app.models.alert import Alert
 from app.schemas.alert import AlertCreate
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 
-async def get_alert_by_id(db: AsyncSession, alert_id: str) -> Optional[Alert]:
+async def get_alert_by_id(db: AsyncSession, alert_id: str) -> Alert | None:
     result = await db.execute(select(Alert).where(Alert.alert_id == alert_id))
     return result.scalars().first()
 
 
-async def get_top_suspicious_events(db: AsyncSession, limit: int = 3) -> List[Alert]:
+async def get_top_suspicious_events(db: AsyncSession, limit: int = 3) -> list[Alert]:
     query = select(Alert).order_by(Alert.risk_score.desc()).limit(limit)
     result = await db.execute(query)
     return list(result.scalars().all())

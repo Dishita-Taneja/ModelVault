@@ -1,6 +1,8 @@
 import datetime
+from typing import Any
+
 from dateutil import parser
-from typing import Dict, Any, Optional
+
 from app.schemas.event import NormalizedEventCreate
 
 
@@ -10,7 +12,7 @@ def parse_datetime(dt_val: Any) -> datetime.datetime:
     return parser.parse(str(dt_val))
 
 
-def map_arn_to_username(arn: str) -> Optional[str]:
+def map_arn_to_username(arn: str) -> str | None:
     if not arn:
         return None
     if "/" in arn:
@@ -18,7 +20,7 @@ def map_arn_to_username(arn: str) -> Optional[str]:
     return arn
 
 
-def normalize_iam_log(raw: Dict[str, Any], user_map: Dict[str, str]) -> NormalizedEventCreate:
+def normalize_iam_log(raw: dict[str, Any], user_map: dict[str, str]) -> NormalizedEventCreate:
     ts = parse_datetime(raw["timestamp"])
     arn = raw.get("user_arn", "")
     username = map_arn_to_username(arn)
@@ -49,7 +51,7 @@ def normalize_iam_log(raw: Dict[str, Any], user_map: Dict[str, str]) -> Normaliz
     )
 
 
-def normalize_ec2_log(raw: Dict[str, Any], ip_user_map: Dict[str, str]) -> NormalizedEventCreate:
+def normalize_ec2_log(raw: dict[str, Any], ip_user_map: dict[str, str]) -> NormalizedEventCreate:
     ts = parse_datetime(raw["timestamp"])
     ip = raw.get("source_ip")
     user_id = ip_user_map.get(ip) if ip else None
@@ -80,9 +82,9 @@ def normalize_ec2_log(raw: Dict[str, Any], ip_user_map: Dict[str, str]) -> Norma
 
 
 def normalize_s3_log(
-    raw: Dict[str, Any],
-    user_map: Dict[str, str],
-    s3_model_map: Dict[str, str]
+    raw: dict[str, Any],
+    user_map: dict[str, str],
+    s3_model_map: dict[str, str]
 ) -> NormalizedEventCreate:
     ts = parse_datetime(raw["timestamp"])
     arn = raw.get("requester_arn", "")
@@ -119,7 +121,7 @@ def normalize_s3_log(
     )
 
 
-def normalize_model_access_log(raw: Dict[str, Any], user_map: Dict[str, str]) -> NormalizedEventCreate:
+def normalize_model_access_log(raw: dict[str, Any], user_map: dict[str, str]) -> NormalizedEventCreate:
     ts = parse_datetime(raw["timestamp"])
     arn = raw.get("requester_arn", "")
     username = map_arn_to_username(arn)

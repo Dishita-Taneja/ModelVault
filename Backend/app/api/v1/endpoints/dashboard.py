@@ -1,13 +1,18 @@
-from typing import List
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func
-from sqlalchemy.future import select
 
 from app.core.database import get_db
-from app.models import MLModel, User, NormalizedEvent, SuspiciousEvent, AnomalyResult, ExfiltrationAssessment
+from app.models import (
+    AnomalyResult,
+    MLModel,
+    NormalizedEvent,
+    SuspiciousEvent,
+    User,
+)
 from app.schemas.dashboard import DashboardSummaryResponse
 from app.schemas.suspicious_event import SuspiciousEventResponse
+from fastapi import APIRouter, Depends
+from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 router = APIRouter()
 
@@ -78,7 +83,7 @@ async def get_dashboard_summary(db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.get("/top-suspicious", response_model=List[SuspiciousEventResponse], tags=["Dashboard"])
+@router.get("/top-suspicious", response_model=list[SuspiciousEventResponse], tags=["Dashboard"])
 async def get_dashboard_top_suspicious(db: AsyncSession = Depends(get_db)):
     """Retrieves top 3 highest risk suspicious events for executive and analyst security dashboards."""
     res = await db.execute(select(SuspiciousEvent).order_by(SuspiciousEvent.risk_score.desc()).limit(3))

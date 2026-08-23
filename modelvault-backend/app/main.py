@@ -1,19 +1,20 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.exceptions import RequestValidationError
 
-from app.core.config import settings
-from app.core.logging import logger
-from app.core.database import engine, Base
-from app.core.exceptions import ModelVaultError
-from app.core.error_handlers import (
-    modelvault_exception_handler,
-    http_exception_handler,
-    validation_exception_handler
-)
-from app.schemas.health import RootHealthResponse
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.v1.api import api_router
+from app.core.config import settings
+from app.core.database import Base, engine
+from app.core.error_handlers import (
+    http_exception_handler,
+    modelvault_exception_handler,
+    validation_exception_handler,
+)
+from app.core.exceptions import ModelVaultError
+from app.core.logging import logger
+from app.schemas.health import RootHealthResponse
 
 
 @asynccontextmanager

@@ -1,16 +1,16 @@
-from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+
 from app.models.model import MLModel
 from app.schemas.model import MLModelCreate
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 
-async def get_model_by_id(db: AsyncSession, model_id: str) -> Optional[MLModel]:
+async def get_model_by_id(db: AsyncSession, model_id: str) -> MLModel | None:
     result = await db.execute(select(MLModel).where(MLModel.model_id == model_id))
     return result.scalars().first()
 
 
-async def get_all_models(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[MLModel]:
+async def get_all_models(db: AsyncSession, skip: int = 0, limit: int = 100) -> list[MLModel]:
     result = await db.execute(select(MLModel).offset(skip).limit(limit))
     return list(result.scalars().all())
 

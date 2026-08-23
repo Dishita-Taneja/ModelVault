@@ -1,7 +1,8 @@
 import datetime
-from typing import Optional, List
-from sqlalchemy import String, Float, Boolean, Text, DateTime, ForeignKey, JSON, Integer
+
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.core.database import Base
 
 
@@ -10,8 +11,8 @@ class SuspiciousEvent(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     event_id: Mapped[str] = mapped_column(String(64), ForeignKey("normalized_events.event_id"), unique=True, index=True, nullable=False)
-    user_id: Mapped[Optional[str]] = mapped_column(String(64), ForeignKey("users.user_id"), index=True, nullable=True)
-    model_id: Mapped[Optional[str]] = mapped_column(String(64), ForeignKey("ml_models.model_id"), index=True, nullable=True)
+    user_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("users.user_id"), index=True, nullable=True)
+    model_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("ml_models.model_id"), index=True, nullable=True)
     timestamp: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)
     risk_score: Mapped[float] = mapped_column(Float, index=True, nullable=False)
     severity: Mapped[str] = mapped_column(String(16), index=True, nullable=False)  # LOW, MEDIUM, HIGH, CRITICAL

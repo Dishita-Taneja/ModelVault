@@ -1,11 +1,12 @@
 import pytest
+from app.analysis.pipeline import AnalysisPipeline
+from app.models.suspicious_event import SuspiciousEvent
+from app.schemas.suspicious_event import (
+    PipelineExecutionReport,
+)
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-
-from app.analysis.pipeline import AnalysisPipeline
-from app.models.suspicious_event import SuspiciousEvent
-from app.schemas.suspicious_event import PipelineExecutionReport, SuspiciousEventResponse
 
 
 @pytest.mark.asyncio

@@ -1,7 +1,8 @@
 import datetime
-from typing import Optional
-from sqlalchemy import String, Float, Text, DateTime, ForeignKey
+
+from sqlalchemy import DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.core.database import Base
 
 
@@ -10,8 +11,8 @@ class Alert(Base):
 
     alert_id: Mapped[str] = mapped_column(String(64), primary_key=True, index=True)
     event_id: Mapped[str] = mapped_column(String(64), ForeignKey("normalized_events.event_id"), nullable=False)
-    model_id: Mapped[Optional[str]] = mapped_column(String(64), ForeignKey("ml_models.model_id"), nullable=True)
-    user_arn: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    model_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("ml_models.model_id"), nullable=True)
+    user_arn: Mapped[str | None] = mapped_column(String(255), nullable=True)
     risk_score: Mapped[float] = mapped_column(Float, nullable=False)
     severity: Mapped[str] = mapped_column(String(32), default="CRITICAL", nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)

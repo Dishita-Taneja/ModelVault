@@ -1,22 +1,22 @@
 import uuid
-from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+
 from app.models.user import User
 from app.schemas.user import UserCreate
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 
-async def get_user_by_id(db: AsyncSession, user_id: str) -> Optional[User]:
+async def get_user_by_id(db: AsyncSession, user_id: str) -> User | None:
     result = await db.execute(select(User).where(User.user_id == user_id))
     return result.scalars().first()
 
 
-async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
+async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     result = await db.execute(select(User).where(User.email == email))
     return result.scalars().first()
 
 
-async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[User]:
+async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 100) -> list[User]:
     result = await db.execute(select(User).offset(skip).limit(limit))
     return list(result.scalars().all())
 

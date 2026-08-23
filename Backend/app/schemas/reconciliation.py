@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -13,7 +13,7 @@ class ReconciliationDetailResponse(BaseModel):
     confidence_score: float
     reconciliation_method: str
     reason_for_change: str
-    source_events_used: List[str] = Field(default_factory=list)
+    source_events_used: list[str] = Field(default_factory=list)
     reconciled_at: datetime.datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -25,4 +25,4 @@ class ReconciliationRunReport(BaseModel):
     high_confidence_count: int = 0
     offsets_applied_count: int = 0
     method_breakdown: dict = Field(default_factory=dict)
-    details: List[ReconciliationDetailResponse] = Field(default_factory=list)
+    details: list[ReconciliationDetailResponse] = Field(default_factory=list)

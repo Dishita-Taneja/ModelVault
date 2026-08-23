@@ -1,20 +1,27 @@
 import datetime
 import uuid
-from typing import List, Dict, Any, Optional, Set
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.models import (
-    NormalizedEvent, User, MLModel, AnomalyResult, ReconciliationResult, InvestigationIncident, DataLineage
-)
-from app.schemas.investigation import TimelineEvent, InvestigationTimelineResponse
-from app.correlation.config import CorrelationConfig, default_correlation_config
-from app.core.logging import logger
 from app.core.exceptions import ResourceNotFoundError
+from app.core.logging import logger
+from app.correlation.config import CorrelationConfig, default_correlation_config
+from app.models import (
+    AnomalyResult,
+    DataLineage,
+    InvestigationIncident,
+    MLModel,
+    NormalizedEvent,
+    ReconciliationResult,
+    User,
+)
+from app.schemas.investigation import InvestigationTimelineResponse, TimelineEvent
 
 
 class CrossSourceCorrelationEngine:
-    def __init__(self, db: AsyncSession, config: Optional[CorrelationConfig] = None):
+    def __init__(self, db: AsyncSession, config: CorrelationConfig | None = None):
         self.db = db
         self.config = config or default_correlation_config
 
@@ -34,9 +41,9 @@ class CrossSourceCorrelationEngine:
         exfiltration_map = await self._fetch_exfiltration_map()
 
         # Find direct & indirect model events
-        correlated: Set[NormalizedEvent] = set()
-        matched_users: Set[str] = set()
-        matched_ips: Set[str] = set()
+        correlated: set[NormalizedEvent] = set()
+        matched_users: set[str] = set()
+        matched_ips: set[str] = set()
 
         for evt in all_events:
             # Check direct model_id match
@@ -88,8 +95,8 @@ class CrossSourceCorrelationEngine:
         reconcile_map = await self._fetch_reconcile_map()
         exfiltration_map = await self._fetch_exfiltration_map()
 
-        correlated: Set[NormalizedEvent] = set()
-        user_ips: Set[str] = set()
+        correlated: set[NormalizedEvent] = set()
+        user_ips: set[str] = set()
 
         for evt in all_events:
             if evt.user_id == user_id or (evt.user_name and username in evt.user_name):
@@ -129,7 +136,7 @@ class CrossSourceCorrelationEngine:
         reconcile_map = await self._fetch_reconcile_map()
         exfiltration_map = await self._fetch_exfiltration_map()
 
-        correlated: Set[NormalizedEvent] = {target_evt}
+        correlated: set[NormalizedEvent] = {target_evt}
         target_time = target_evt.event_time_reconciled
 
         for evt in all_events:
@@ -167,31 +174,31 @@ class CrossSourceCorrelationEngine:
             summary=f"Reconstructed incident timeline centered on suspicious event '{event_id}' ({target_evt.source} - {target_evt.event_name}) across {len(timeline)} correlated events."
         )
 
-    async def _fetch_all_events(self) -> List[NormalizedEvent]:
+    async def _fetch_all_events(self) -> list[NormalizedEvent]:
         res = await self.db.execute(select(NormalizedEvent).order_by(NormalizedEvent.event_time_reconciled.asc()))
         return list(res.scalars().all())
 
-    async def _fetch_anomaly_map(self) -> Dict[str, AnomalyResult]:
+    async def _fetch_anomaly_map(self) -> dict[str, AnomalyResult]:
         res = await self.db.execute(select(AnomalyResult))
         return {a.event_id: a for a in res.scalars().all()}
 
-    async def _fetch_reconcile_map(self) -> Dict[str, ReconciliationResult]:
+    async def _fetch_reconcile_map(self) -> dict[str, ReconciliationResult]:
         res = await self.db.execute(select(ReconciliationResult))
         return {r.event_id: r for r in res.scalars().all()}
 
-    async def _fetch_exfiltration_map(self) -> Dict[str, Any]:
+    async def _fetch_exfiltration_map(self) -> dict[str, Any]:
         from app.models.exfiltration import ExfiltrationAssessment
         res = await self.db.execute(select(ExfiltrationAssessment))
         return {e.event_id: e for e in res.scalars().all()}
 
     def _build_timeline(
         self,
-        events: List[NormalizedEvent],
-        anomaly_map: Dict[str, AnomalyResult],
-        reconcile_map: Dict[str, ReconciliationResult],
+        events: list[NormalizedEvent],
+        anomaly_map: dict[str, AnomalyResult],
+        reconcile_map: dict[str, ReconciliationResult],
         primary_target: str,
-        exfiltration_map: Optional[Dict[str, Any]] = None
-    ) -> List[TimelineEvent]:
+        exfiltration_map: dict[str, Any] | None = None
+    ) -> list[TimelineEvent]:
         sorted_events = sorted(events, key=lambda x: x.event_time_reconciled)
         timeline = []
         exfil_map = exfiltration_map or {}
@@ -246,7 +253,7 @@ class CrossSourceCorrelationEngine:
         self,
         target_type: str,
         target_id: str,
-        timeline: List[TimelineEvent],
+        timeline: list[TimelineEvent],
         summary: str
     ) -> InvestigationTimelineResponse:
         total_count = len(timeline)

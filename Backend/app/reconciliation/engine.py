@@ -1,11 +1,14 @@
 import datetime
-from typing import List, Dict, Any, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.models import NormalizedEvent, RawLog, ReconciliationResult, DataLineage
-from app.schemas.reconciliation import ReconciliationRunReport, ReconciliationDetailResponse
 from app.core.logging import logger
+from app.models import DataLineage, NormalizedEvent, ReconciliationResult
+from app.schemas.reconciliation import (
+    ReconciliationDetailResponse,
+    ReconciliationRunReport,
+)
 
 
 class ReconciliationEngine:
@@ -136,7 +139,7 @@ class ReconciliationEngine:
         logger.info(f"Reconciliation engine completed. Total events reconciled: {report.total_events_reconciled}")
         return report
 
-    def _cluster_events(self, events: List[NormalizedEvent]) -> Dict[str, List[NormalizedEvent]]:
+    def _cluster_events(self, events: list[NormalizedEvent]) -> dict[str, list[NormalizedEvent]]:
         clusters = {}
         for evt in events:
             # Cluster key by IP or User ARN
@@ -157,8 +160,8 @@ class ReconciliationEngine:
     def _find_correlated_events(
         self,
         target_event: NormalizedEvent,
-        clusters: Dict[str, List[NormalizedEvent]]
-    ) -> List[NormalizedEvent]:
+        clusters: dict[str, list[NormalizedEvent]]
+    ) -> list[NormalizedEvent]:
         matches = set()
 
         keys_to_check = []

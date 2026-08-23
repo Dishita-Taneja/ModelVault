@@ -1,9 +1,8 @@
+from app.core.database import get_db
+from app.exfiltration.detector import ExfiltrationDetector
+from app.schemas.exfiltration import ExfiltrationResponse
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.database import get_db
-from app.schemas.exfiltration import ExfiltrationResponse
-from app.exfiltration.detector import ExfiltrationDetector
 
 router = APIRouter()
 

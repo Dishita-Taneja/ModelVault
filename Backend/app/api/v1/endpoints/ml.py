@@ -1,17 +1,19 @@
 import time
-from typing import List, Optional
+
+from app.core.database import get_db
+from app.core.logging import logger
+from app.ml.model_manager import model_manager
+from app.ml.training import run_training_pipeline
+from app.models import AnomalyResult, DataLineage, MLModel, NormalizedEvent, User
+from app.schemas.ml import (
+    AnomalyResultResponse,
+    DetectionReportResponse,
+    TrainRequest,
+    TrainResponse,
+)
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-
-from app.core.database import get_db
-from app.models import NormalizedEvent, MLModel, User, AnomalyResult, DataLineage
-from app.schemas.ml import (
-    TrainRequest, TrainResponse, DetectionReportResponse, AnomalyResultResponse
-)
-from app.ml.training import run_training_pipeline
-from app.ml.model_manager import model_manager
-from app.core.logging import logger
 
 router = APIRouter()
 
@@ -39,7 +41,7 @@ async def train_model(
         )
     except Exception as e:
         logger.error(f"ML Training failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Training pipeline error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Training pipeline error: {e!s}")
 
 
 @router.post("/detect", response_model=DetectionReportResponse, status_code=200, tags=["ML Anomaly Detection"])
@@ -151,7 +153,7 @@ async def run_detection(db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.get("/results", response_model=List[AnomalyResultResponse], tags=["ML Anomaly Detection"])
+@router.get("/results", response_model=list[AnomalyResultResponse], tags=["ML Anomaly Detection"])
 async def get_anomaly_results(
     skip: int = 0,
     limit: int = 100,
@@ -167,7 +169,7 @@ async def get_anomaly_results(
     return list(res.scalars().all())
 
 
-@router.get("/results/top", response_model=List[AnomalyResultResponse], tags=["ML Anomaly Detection"])
+@router.get("/results/top", response_model=list[AnomalyResultResponse], tags=["ML Anomaly Detection"])
 async def get_top_anomalous_results(limit: int = 3, db: AsyncSession = Depends(get_db)):
     """Retrieves top N highest risk anomalous events (PRD item 8 requirement)."""
     query = select(AnomalyResult).order_by(AnomalyResult.anomaly_score.desc()).limit(limit)

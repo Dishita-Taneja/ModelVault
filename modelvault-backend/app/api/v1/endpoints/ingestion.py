@@ -1,8 +1,8 @@
+from app.core.database import get_db
+from app.ingestion.service import IngestionService
+from app.schemas.event import IngestionReport
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db
-from app.schemas.event import IngestionReport
-from app.ingestion.service import IngestionService
 
 router = APIRouter()
 

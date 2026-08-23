@@ -1,17 +1,15 @@
-from typing import List, Optional
+from app.core.database import get_db
+from app.models.anomaly_result import AnomalyResult
+from app.schemas.ml import AnomalyResultResponse
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.core.database import get_db
-from app.models.anomaly_result import AnomalyResult
-from app.schemas.ml import AnomalyResultResponse
-
 router = APIRouter()
 
 
-@router.get("", response_model=List[AnomalyResultResponse], tags=["Anomalies"])
-@router.get("/", response_model=List[AnomalyResultResponse], tags=["Anomalies"])
+@router.get("", response_model=list[AnomalyResultResponse], tags=["Anomalies"])
+@router.get("/", response_model=list[AnomalyResultResponse], tags=["Anomalies"])
 async def list_anomalies(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
@@ -27,7 +25,7 @@ async def list_anomalies(
     return list(res.scalars().all())
 
 
-@router.get("/top", response_model=List[AnomalyResultResponse], tags=["Anomalies"])
+@router.get("/top", response_model=list[AnomalyResultResponse], tags=["Anomalies"])
 async def get_top_anomalies(
     limit: int = Query(3, ge=1, le=10),
     db: AsyncSession = Depends(get_db)

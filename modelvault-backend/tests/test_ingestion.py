@@ -1,13 +1,13 @@
-import pytest
-import tempfile
 import json
+import tempfile
 from pathlib import Path
-from sqlalchemy.future import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import User, MLModel, NormalizedEvent, RawLog, DataLineage
-from app.ingestion.service import IngestionService, run_ingestion_pipeline
+import pytest
+from app.ingestion.service import IngestionService
+from app.models import DataLineage, MLModel, NormalizedEvent, RawLog, User
 from app.schemas.event import IngestionReport
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 
 @pytest.mark.asyncio

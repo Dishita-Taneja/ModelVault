@@ -1,6 +1,4 @@
-import datetime
-from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, EmailStr
 
 
 class IAMLogItem(BaseModel):
@@ -8,8 +6,8 @@ class IAMLogItem(BaseModel):
     timestamp: str
     user_arn: str
     action: str
-    source_ip: Optional[str] = None
-    user_agent: Optional[str] = None
+    source_ip: str | None = None
+    user_agent: str | None = None
     status: str = "SUCCESS"
 
 
@@ -17,7 +15,7 @@ class EC2LogItem(BaseModel):
     event_id: str
     timestamp: str
     instance_id: str
-    source_ip: Optional[str] = None
+    source_ip: str | None = None
     action: str
     bytes_transferred: int = 0
     status: str = "SUCCESS"
@@ -29,7 +27,7 @@ class S3LogItem(BaseModel):
     bucket: str
     key: str
     requester_arn: str
-    source_ip: Optional[str] = None
+    source_ip: str | None = None
     bytes_sent: int = 0
     http_status: int = 200
 
@@ -39,8 +37,8 @@ class ModelAccessLogItem(BaseModel):
     timestamp: str
     model_id: str
     requester_arn: str
-    input_tokens: Optional[int] = 0
-    execution_time_ms: Optional[int] = 0
+    input_tokens: int | None = 0
+    execution_time_ms: int | None = 0
     status: str = "SUCCESS"
 
 
@@ -56,9 +54,9 @@ class UserItem(BaseModel):
 class ModelItem(BaseModel):
     model_id: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     framework: str = "PyTorch"
     s3_uri: str
     sensitivity_level: str = "HIGH"
-    owner_email: Optional[str] = None
+    owner_email: str | None = None
     created_at: str

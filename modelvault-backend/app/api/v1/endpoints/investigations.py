@@ -1,9 +1,8 @@
+from app.core.database import get_db
+from app.correlation.engine import CrossSourceCorrelationEngine
+from app.schemas.investigation import InvestigationTimelineResponse
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.database import get_db
-from app.schemas.investigation import InvestigationTimelineResponse
-from app.correlation.engine import CrossSourceCorrelationEngine
 
 router = APIRouter()
 

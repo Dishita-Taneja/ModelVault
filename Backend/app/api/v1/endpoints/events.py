@@ -1,27 +1,26 @@
 import datetime
-from typing import List, Optional
+
+from app.core.database import get_db
+from app.core.exceptions import ResourceNotFoundError
+from app.crud import crud_event
+from app.models.event import NormalizedEvent
+from app.schemas.event import NormalizedEventCreate, NormalizedEventResponse
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.core.database import get_db
-from app.models.event import NormalizedEvent
-from app.schemas.event import NormalizedEventResponse, NormalizedEventCreate
-from app.crud import crud_event
-from app.core.exceptions import ResourceNotFoundError
-
 router = APIRouter()
 
 
-@router.get("", response_model=List[NormalizedEventResponse], tags=["Events"])
-@router.get("/", response_model=List[NormalizedEventResponse], tags=["Events"])
+@router.get("", response_model=list[NormalizedEventResponse], tags=["Events"])
+@router.get("/", response_model=list[NormalizedEventResponse], tags=["Events"])
 async def list_events(
-    user_id: Optional[str] = Query(None, description="Filter by User ID"),
-    model_id: Optional[str] = Query(None, description="Filter by Model ID"),
-    source: Optional[str] = Query(None, description="Filter by log source: IAM, EC2, S3, MODEL"),
-    start_time: Optional[datetime.datetime] = Query(None, description="Filter events after start_time"),
-    end_time: Optional[datetime.datetime] = Query(None, description="Filter events before end_time"),
-    anomaly_only: Optional[bool] = Query(None, description="Filter anomalous events only"),
+    user_id: str | None = Query(None, description="Filter by User ID"),
+    model_id: str | None = Query(None, description="Filter by Model ID"),
+    source: str | None = Query(None, description="Filter by log source: IAM, EC2, S3, MODEL"),
+    start_time: datetime.datetime | None = Query(None, description="Filter events after start_time"),
+    end_time: datetime.datetime | None = Query(None, description="Filter events before end_time"),
+    anomaly_only: bool | None = Query(None, description="Filter anomalous events only"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: AsyncSession = Depends(get_db)

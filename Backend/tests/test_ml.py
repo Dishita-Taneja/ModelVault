@@ -1,13 +1,9 @@
 import pytest
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-
 from app.ingestion.service import IngestionService
 from app.ml.feature_engineering import FeatureEngineeringPipeline
 from app.ml.training import run_training_pipeline
-from app.ml.model_manager import model_manager
-from app.models import AnomalyResult
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.mark.asyncio

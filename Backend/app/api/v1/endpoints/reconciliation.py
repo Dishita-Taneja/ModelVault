@@ -1,13 +1,15 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from app.core.database import get_db
-from app.models.reconciliation import ReconciliationResult
-from app.schemas.reconciliation import ReconciliationRunReport, ReconciliationDetailResponse
-from app.reconciliation.engine import ReconciliationEngine
 from app.core.exceptions import ResourceNotFoundError
+from app.models.reconciliation import ReconciliationResult
+from app.reconciliation.engine import ReconciliationEngine
+from app.schemas.reconciliation import (
+    ReconciliationDetailResponse,
+    ReconciliationRunReport,
+)
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 router = APIRouter()
 
@@ -19,7 +21,7 @@ async def run_reconciliation(db: AsyncSession = Depends(get_db)):
     return await engine.reconcile_all()
 
 
-@router.get("/", response_model=List[ReconciliationDetailResponse], tags=["Reconciliation"])
+@router.get("/", response_model=list[ReconciliationDetailResponse], tags=["Reconciliation"])
 async def list_reconciliations(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
     """Retrieves all timestamp reconciliation audit details."""
     res = await db.execute(select(ReconciliationResult).offset(skip).limit(limit))

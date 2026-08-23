@@ -1,5 +1,6 @@
 import datetime
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -7,13 +8,13 @@ class TimelineEvent(BaseModel):
     event_id: str
     source: str
     timestamp: datetime.datetime
-    user_id: Optional[str] = None
-    user_name: Optional[str] = None
-    model_id: Optional[str] = None
+    user_id: str | None = None
+    user_name: str | None = None
+    model_id: str | None = None
     event_name: str
-    ip_address: Optional[str] = None
-    evidence: Dict[str, Any] = Field(default_factory=dict)
-    anomaly_score: Optional[float] = 0.0
+    ip_address: str | None = None
+    evidence: dict[str, Any] = Field(default_factory=dict)
+    anomaly_score: float | None = 0.0
     is_anomaly: bool = False
     reconciled_offset_seconds: float = 0.0
     exfiltration_suspected: bool = False
@@ -32,7 +33,7 @@ class InvestigationTimelineResponse(BaseModel):
     total_events_count: int
     anomalous_events_count: int
     max_anomaly_score: float
-    timeline: List[TimelineEvent] = Field(default_factory=list)
+    timeline: list[TimelineEvent] = Field(default_factory=list)
     created_at: datetime.datetime
 
     model_config = ConfigDict(from_attributes=True)

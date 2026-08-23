@@ -1,13 +1,10 @@
 import pytest
+from app.exfiltration.detector import ExfiltrationDetector
+from app.ingestion.service import IngestionService
+from app.ml.training import run_training_pipeline
+from app.reconciliation.engine import ReconciliationEngine
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-
-from app.ingestion.service import IngestionService
-from app.reconciliation.engine import ReconciliationEngine
-from app.ml.training import run_training_pipeline
-from app.exfiltration.detector import ExfiltrationDetector
-from app.models.exfiltration import ExfiltrationAssessment
 
 
 @pytest.mark.asyncio

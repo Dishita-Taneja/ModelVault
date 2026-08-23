@@ -1,8 +1,9 @@
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Any, Tuple, Optional
-from sklearn.preprocessing import StandardScaler
 from dateutil import parser
+from sklearn.preprocessing import StandardScaler
 
 FEATURE_NAMES = [
     "bytes_transferred_log",
@@ -28,9 +29,9 @@ class FeatureEngineeringPipeline:
 
     def extract_features(
         self,
-        events: List[Dict[str, Any]],
-        models_metadata: Optional[List[Dict[str, Any]]] = None,
-        users_metadata: Optional[List[Dict[str, Any]]] = None
+        events: list[dict[str, Any]],
+        models_metadata: list[dict[str, Any]] | None = None,
+        users_metadata: list[dict[str, Any]] | None = None
     ) -> pd.DataFrame:
         if not events:
             return pd.DataFrame(columns=self.feature_names)
@@ -122,9 +123,9 @@ class FeatureEngineeringPipeline:
 
     def fit_transform(
         self,
-        events: List[Dict[str, Any]],
-        models_metadata: Optional[List[Dict[str, Any]]] = None,
-        users_metadata: Optional[List[Dict[str, Any]]] = None
+        events: list[dict[str, Any]],
+        models_metadata: list[dict[str, Any]] | None = None,
+        users_metadata: list[dict[str, Any]] | None = None
     ) -> np.ndarray:
         X_df = self.extract_features(events, models_metadata, users_metadata)
         X_scaled = self.scaler.fit_transform(X_df)
@@ -133,9 +134,9 @@ class FeatureEngineeringPipeline:
 
     def transform(
         self,
-        events: List[Dict[str, Any]],
-        models_metadata: Optional[List[Dict[str, Any]]] = None,
-        users_metadata: Optional[List[Dict[str, Any]]] = None
+        events: list[dict[str, Any]],
+        models_metadata: list[dict[str, Any]] | None = None,
+        users_metadata: list[dict[str, Any]] | None = None
     ) -> np.ndarray:
         X_df = self.extract_features(events, models_metadata, users_metadata)
         if not self.is_fitted:
