@@ -1,0 +1,43 @@
+# Example Terraform Remote State Backend Configuration with S3 & DynamoDB Locking
+# To enable remote state locking:
+# 1. Create the S3 bucket and DynamoDB lock table using terraform apply or AWS CLI.
+# 2. Uncomment the backend "s3" block below.
+# 3. Re-initialize terraform with `terraform init -migrate-state`.
+
+# terraform {
+#   backend "s3" {
+#     bucket         = "modelvault-tf-state-bucket-production"
+#     key            = "production/terraform.tfstate"
+#     region         = "us-east-1"
+#     dynamodb_table = "modelvault-tf-locks-production"
+#     encrypt        = true
+#   }
+# }
+
+resource "aws_s3_bucket" "terraform_state" {
+  count         = 0 # Set to 1 to manage TF state bucket in IaC
+  bucket        = "modelvault-tf-state-bucket-${var.environment}"
+  force_destroy = false
+
+  tags = {
+    Name        = "modelvault-tf-state-bucket"
+    Environment = var.environment
+  }
+}
+
+resource "aws_dynamodb_table" "terraform_locks" {
+  count        = 0 # Set to 1 to manage state locks table in IaC
+  name         = "modelvault-tf-locks-${var.environment}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+
+  tags = {
+    Name        = "modelvault-tf-locks"
+    Environment = var.environment
+  }
+}
