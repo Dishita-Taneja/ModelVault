@@ -11,8 +11,8 @@ permissions:
   id-token: write
 
 jobs:
-  test-and-lint:
-    name: 1. Backend Test & Code Linting
+  backend-test-and-lint:
+    name: 1-3. Backend Build, Test & Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -26,44 +26,23 @@ jobs:
           cache: 'pip'
           cache-dependency-path: 'backend/requirements.txt'
 
-      - name: Install Backend Dependencies
+      - name: 1. Install Backend Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
           pip install ruff pytest-asyncio
 
-      - name: Run Code Quality Checks (Ruff)
-        run: |
-          ruff check backend/app backend/tests || echo "Linter warnings reported."
-
-      - name: Execute Full Pytest Test Suite
+      - name: 2. Execute Full Pytest Test Suite
         run: |
           cd backend
           python -m pytest tests -v
 
-  terraform-validation:
-    name: 2. Infrastructure (Terraform) Validation
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.7
-
-      - name: Validate Terraform Syntax & Formatting
+      - name: 3. Run Backend Code Quality Checks (Ruff)
         run: |
-          cd terraform
-          terraform fmt -check || echo "Formatting check completed."
-          terraform init -backend=false
-          terraform validate
+          python -m ruff check backend/app backend/tests
 
-  frontend-build-and-deploy:
-    name: 3. Frontend Build & Deploy to S3 / CloudFront
-    needs: [test-and-lint, terraform-validation]
+  frontend-build-and-test:
+    name: 4-5. Frontend Test & Build
     runs-on: ubuntu-latest
 
     steps:
@@ -77,56 +56,63 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'frontend/package-lock.json'
 
-      - name: Install Frontend Dependencies
+      - name: 4. Install Frontend Dependencies
         run: |
           cd frontend
           npm ci
 
-      - name: Build Vite Production Assets
+      - name: 5. Build Vite Production Bundle
         run: |
           cd frontend
           npm run build
 
-      - name: Configure AWS Credentials
-        if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && secrets.AWS_ACCESS_KEY_ID != ''
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
-
-      - name: Sync Production Static Assets to S3 & Invalidate CloudFront
-        if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && secrets.AWS_ACCESS_KEY_ID != ''
-        run: |
-          echo "Deploying frontend/dist to AWS S3 and invalidating CloudFront..."
-          # aws s3 sync frontend/dist/ s3://${{ secrets.FRONTEND_S3_BUCKET }} --delete
-          # aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-
-  build-and-push-ecr:
-    name: 4. Docker Image Build & Push to ECR
-    needs: [test-and-lint, terraform-validation]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+  terraform-validation:
+    name: 6-7. Infrastructure (Terraform) Validation
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        if: secrets.AWS_ACCESS_KEY_ID != ''
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      - name: 6. Check Terraform Formatting
+        run: |
+          cd terraform
+          terraform fmt -check || echo "Terraform formatting check completed."
+
+      - name: 7. Validate Terraform Syntax & Configuration
+        run: |
+          cd terraform
+          terraform init -backend=false
+          terraform validate
+
+  docker-build-and-ecr-push:
+    name: 8-9. Docker Image Build & Push to Amazon ECR
+    needs: [backend-test-and-lint, frontend-build-and-test, terraform-validation]
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && (secrets.AWS_ACCESS_KEY_ID != '' || secrets.AWS_ROLE_ARN != '')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC or Secrets)
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
       - name: Log in to Amazon ECR
-        if: secrets.AWS_ACCESS_KEY_ID != ''
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, Tag & Push Docker Image
-        if: secrets.AWS_ACCESS_KEY_ID != ''
+      - name: 8-9. Build, Tag & Push Production Container to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: modelvault-backend
@@ -137,24 +123,51 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-  deploy-to-ecs:
-    name: 5. Deploy to AWS ECS Fargate & Run Migrations
-    needs: [build-and-push-ecr]
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && secrets.AWS_ACCESS_KEY_ID != ''
+  deploy-production:
+    name: 10-13. Production Cloud Deployment & Health Verification
+    needs: [docker-build-and-ecr-push]
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && (secrets.AWS_ACCESS_KEY_ID != '' || secrets.AWS_ROLE_ARN != '')
     runs-on: ubuntu-latest
 
     steps:
-      - name: Configure AWS Credentials
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Configure AWS Credentials (OIDC or Secrets)
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
-      - name: Force New ECS Fargate Deployment
+      - name: 10. Deploy Updated Container Image to AWS ECS Fargate
         run: |
           aws ecs update-service --cluster modelvault-cluster --service modelvault-service --force-new-deployment
-
-      - name: Wait for ECS Service Stability
-        run: |
           aws ecs wait services-stable --cluster modelvault-cluster --services modelvault-service
+
+      - name: 11-12. Build & Sync Production Frontend to S3 and Invalidate CloudFront
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+          if [ -n "${{ secrets.FRONTEND_S3_BUCKET }}" ]; then
+            aws s3 sync dist/ s3://${{ secrets.FRONTEND_S3_BUCKET }} --delete
+          fi
+          if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+          fi
+
+      - name: 13. Post-Deployment Endpoint Health Verification
+        run: |
+          echo "Executing post-deployment endpoint health verification..."
+          if [ -n "${{ secrets.ALB_URL }}" ]; then
+            curl -f -s "${{ secrets.ALB_URL }}/health" || exit 1
+          fi
