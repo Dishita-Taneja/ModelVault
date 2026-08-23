@@ -29,7 +29,7 @@ ModelVault/
 │   └── docker-entrypoint.sh # Container Bootstrap (Migrations & Startup)
 ├── frontend/               # React SOC Security Dashboard (Tailwind, Lucide, Vite)
 ├── data/                   # Organizer-Provided Actual Security Log Datasets
-├── terraform/              # Reusable AWS IaC Configuration (ECS Fargate, RDS, S3, ALB, ECR)
+├── terraform/              # Reusable AWS IaC Configuration (ECS Fargate, RDS, S3, ALB, CloudFront)
 ├── .github/workflows/      # Production CI/CD Deployment Pipeline (GitHub Actions)
 └── docs/                   # Technical Documentation & Pipeline Diagrams
 ```
@@ -61,27 +61,34 @@ When the container starts:
 
 ---
 
-## ☁️ AWS Infrastructure & Production Deployment
+## ☁️ AWS Infrastructure & Production Cloud Architecture
 
 ModelVault utilizes an enterprise-grade, non-public AWS architecture managed entirely via Terraform.
 
 ```
-                    Internet
-                       │
-             ┌─────────▼─────────┐
-             │ Application Load  │
-             │  Balancer (ALB)   │
-             └─────────┬─────────┘
-                       │ (Port 8000)
-             ┌─────────▼─────────┐
-             │    ECS Fargate    │ ──(IAM)──> S3 Storage Bucket
-             │  Container Task   │ ──(Logs)─> CloudWatch Log Group
-             └─────────┬─────────┘
-                       │ (Port 5432 - Non-Public Subnet)
-             ┌─────────▼─────────┐
-             │  RDS PostgreSQL   │
-             │ Database Instance │
-             └───────────────────┘
+                  Browser Client
+                        │
+             ┌──────────▼──────────┐
+             │ CloudFront CDN (HTTPS)│
+             └──────────┬──────────┘
+                        │ (Origin Access Control - OAC)
+             ┌──────────▼──────────┐
+             │  S3 Frontend Bucket │
+             │  (React / Vite SPA) │
+             └─────────────────────┘
+                        │
+             ┌──────────▼──────────┐
+             │ ALB Listener (HTTPS) │
+             └──────────┬──────────┘
+                        │ (Port 8000)
+             ┌──────────▼──────────┐
+             │  ECS Fargate Task   │ ──(KMS)─> S3 Storage Bucket
+             │  (FastAPI Backend)  │ ──(Logs)─> CloudWatch Log Group
+             └──────────┬──────────┘
+                        │ (Port 5432 - Private Subnet)
+             ┌──────────▼──────────┐
+             │ RDS PostgreSQL (KMS)│
+             └─────────────────────┘
 ```
 
 ### 1. Reusable Terraform Infrastructure (`terraform/`)
@@ -103,11 +110,13 @@ terraform apply -var="db_password=YourSecurePassword123!" -auto-approve
 
 #### Provisioned AWS Resources:
 - **VPC & Subnets**: Multi-AZ public subnets for ALB/ECS and private subnets for RDS.
-- **Security Groups**: ALB ingress (port 80); ECS task ingress (port 8000 from ALB only); RDS PostgreSQL ingress (port 5432 from ECS only).
-- **RDS PostgreSQL**: Non-public `db.t3.micro` instance in private subnet.
-- **ECS Fargate**: Managed cluster with container auto-healing and task health checking.
-- **S3 Bucket**: Versioned & encrypted bucket for ML models and raw log evidence.
-- **CloudWatch**: Log group `/ecs/modelvault-backend` with 30-day retention.
+- **Frontend S3 & CloudFront**: S3 static asset bucket with Origin Access Control (OAC) and SPA routing rules.
+- **KMS Key**: Centralized Customer Managed Key for encryption at rest (RDS, S3, CloudWatch).
+- **Security Groups**: ALB ingress (ports 80 & 443); ECS task ingress (port 8000 from ALB only); RDS PostgreSQL ingress (port 5432 from ECS only).
+- **RDS PostgreSQL**: Non-public `db.t3.micro` instance in private subnet with KMS encryption at rest.
+- **ECS Fargate**: Managed cluster with container auto-healing, Secrets Manager integration, and task health checking.
+- **S3 Bucket**: Versioned & KMS-encrypted bucket for ML models and raw log evidence.
+- **CloudWatch**: Log group `/ecs/modelvault-backend` with KMS encryption and 30-day retention.
 
 ---
 
@@ -117,14 +126,9 @@ The CI/CD pipeline triggers automatically on pushes to `main`/`master`:
 
 1. **Test & Lint**: Executes `pytest` test suite and `ruff` linting.
 2. **Terraform Validation**: Validates syntax (`terraform validate` and `terraform fmt`).
-3. **Docker Build & ECR Push**: Builds production Docker image, tags with Git commit SHA and `:latest`, and pushes to Amazon ECR.
-4. **ECS Deployment**: Performs rolling zero-downtime update on ECS Fargate service and executes database migrations.
-
-#### Required GitHub Secrets:
-Configure the following secrets in GitHub Repository Settings $\rightarrow$ Secrets and Variables $\rightarrow$ Actions:
-- `AWS_ACCESS_KEY_ID`: AWS IAM deployer access key.
-- `AWS_SECRET_ACCESS_KEY`: AWS IAM deployer secret key.
-- `AWS_REGION`: Target AWS region (e.g. `us-east-1`).
+3. **Frontend Build & Deploy**: Builds React/Vite SPA bundle and deploys `frontend/dist/` to S3 with CloudFront cache invalidation.
+4. **Docker Build & ECR Push**: Builds production Docker image, tags with Git commit SHA and `:latest`, and pushes to Amazon ECR.
+5. **ECS Deployment**: Performs rolling zero-downtime update on ECS Fargate service and executes database migrations.
 
 ---
 
@@ -137,4 +141,4 @@ cd backend
 python -m pytest tests -v
 ```
 
-All 26 unit and integration tests execute against an isolated database environment.
+All 37 unit and integration tests execute against an isolated database environment.

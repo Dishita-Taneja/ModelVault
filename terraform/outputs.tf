@@ -34,6 +34,21 @@ output "secretsmanager_secret_arn" {
   value       = aws_secretsmanager_secret.db_password.arn
 }
 
+output "frontend_s3_bucket_name" {
+  description = "S3 Bucket Name for Production Frontend Assets"
+  value       = aws_s3_bucket.frontend.id
+}
+
+output "cloudfront_domain_name" {
+  description = "CloudFront Distribution Domain Name for Production Frontend"
+  value       = aws_cloudfront_distribution.frontend.domain_name
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront Distribution ID for Cache Invalidation"
+  value       = aws_cloudfront_distribution.frontend.id
+}
+
 output "ecs_cluster_name" {
   description = "ECS Cluster Name"
   value       = aws_ecs_cluster.main.name
