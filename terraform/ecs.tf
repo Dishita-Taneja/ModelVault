@@ -1,6 +1,7 @@
 resource "aws_cloudwatch_log_group" "ecs" {
   name              = "/ecs/modelvault-backend"
   retention_in_days = 30
+  kms_key_id        = aws_kms_key.modelvault_key.arn
 
   tags = {
     Name = "modelvault-ecs-logs"
@@ -47,12 +48,17 @@ resource "aws_ecs_task_definition" "app" {
         { name = "POSTGRES_SERVER", value = aws_db_instance.postgres.address },
         { name = "POSTGRES_PORT", value = "5432" },
         { name = "POSTGRES_USER", value = var.db_user },
-        { name = "POSTGRES_PASSWORD", value = var.db_password },
         { name = "POSTGRES_DB", value = var.db_name },
         { name = "POSTGRES_ASYNC_URI", value = "postgresql+asyncpg://${var.db_user}:${var.db_password}@${aws_db_instance.postgres.address}:5432/${var.db_name}" },
         { name = "S3_BUCKET_NAME", value = aws_s3_bucket.storage.id },
         { name = "AUTO_INGEST_ON_STARTUP", value = "true" },
         { name = "LOG_LEVEL", value = "INFO" }
+      ]
+      secrets = [
+        {
+          name      = "POSTGRES_PASSWORD"
+          valueFrom = aws_secretsmanager_secret.db_password.arn
+        }
       ]
       logConfiguration = {
         logDriver = "awslogs"

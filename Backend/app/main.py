@@ -11,6 +11,7 @@ from app.core.error_handlers import (
     http_exception_handler,
     modelvault_exception_handler,
     validation_exception_handler,
+    unhandled_exception_handler
 )
 from app.core.exceptions import ModelVaultError
 from app.core.logging import logger
@@ -56,6 +57,7 @@ app.add_middleware(
 app.add_exception_handler(ModelVaultError, modelvault_exception_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, unhandled_exception_handler)
 
 
 # Root Health Check Endpoint (Exact PRD requirement)

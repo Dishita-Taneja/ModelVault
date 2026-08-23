@@ -34,6 +34,18 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "acm_certificate_arn" {
+  type        = string
+  description = "Optional AWS Certificate Manager (ACM) SSL/TLS Certificate ARN for HTTPS listener"
+  default     = ""
+}
+
+variable "enable_https_redirect" {
+  type        = bool
+  description = "Whether to redirect HTTP port 80 traffic to HTTPS port 443"
+  default     = false
+}
+
 variable "container_image" {
   type        = string
   description = "Docker image URI in ECR"

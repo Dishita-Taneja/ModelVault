@@ -42,3 +42,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             }
         }
     )
+
+
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    # Log full error internally for investigation without leaking traceback to caller
+    logger.error(f"Unhandled server exception on {request.method} {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "An internal server error occurred. Please contact the security operator."
+            }
+        }
+    )
