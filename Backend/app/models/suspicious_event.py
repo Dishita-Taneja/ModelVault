@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -27,6 +27,12 @@ class SuspiciousEvent(Base):
     detected_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True),
         default=datetime.datetime.now(datetime.timezone.utc)
+    )
+
+    __table_args__ = (
+        Index("idx_suspicious_risk_severity", "risk_score", "severity"),
+        Index("idx_suspicious_user_time", "user_id", "timestamp"),
+        Index("idx_suspicious_model_time", "model_id", "timestamp"),
     )
 
     event = relationship("NormalizedEvent")

@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Float, ForeignKey, String
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Float, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -12,18 +12,24 @@ class NormalizedEvent(Base):
     event_id: Mapped[str] = mapped_column(String(64), primary_key=True, index=True)
     source: Mapped[str] = mapped_column(String(32), index=True, nullable=False)  # IAM, EC2, S3, MODEL
     event_time_raw: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    event_time_reconciled: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    user_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("users.user_id"), nullable=True)
+    event_time_reconciled: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)
+    user_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("users.user_id"), index=True, nullable=True)
     user_name: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)  # user_arn / username
     ip_address: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)  # source_ip
     event_name: Mapped[str] = mapped_column(String(128), nullable=False)  # action
-    model_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("ml_models.model_id"), nullable=True)
+    model_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("ml_models.model_id"), index=True, nullable=True)
     region: Mapped[str | None] = mapped_column(String(32), default="us-east-1", nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="SUCCESS", nullable=False)
     bytes_transferred: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     risk_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     anomaly_flag: Mapped[bool] = mapped_column(Boolean, default=False, index=True, nullable=False)
     extra: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)  # source-specific extra fields
+
+    __table_args__ = (
+        Index("idx_normalized_user_time", "user_id", "event_time_reconciled"),
+        Index("idx_normalized_model_time", "model_id", "event_time_reconciled"),
+        Index("idx_normalized_source_time", "source", "event_time_reconciled"),
+    )
 
     # Aliases / Compatibility Properties
     @property
