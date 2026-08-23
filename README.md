@@ -1,4 +1,4 @@
-# ModelVault - Cybersecurity Platform Backend & Data Pipeline
+# ModelVault - Cybersecurity Platform & ML Threat Detection Engine
 
 ModelVault helps security analysts identify suspicious access to ML models after an identity compromise by ingesting cloud/model logs, reconciling cross-source timestamps, executing unsupervised Isolation Forest anomaly detection, correlating identity timelines, and detecting model weight exfiltration attempts.
 
@@ -8,7 +8,7 @@ ModelVault helps security analysts identify suspicious access to ML models after
 
 ```
 ModelVault/
-├── modelvault-backend/     # FastAPI Backend & ML Analytics Service
+├── backend/                # FastAPI Backend & ML Analytics Service
 │   ├── app/
 │   │   ├── api/            # API v1 REST Endpoints
 │   │   ├── core/           # Database, Logging, Configuration
@@ -23,10 +23,11 @@ ModelVault/
 │   │   ├── analysis/       # Complete End-to-End Analysis Pipeline Service
 │   │   └── main.py         # Application Entrypoint
 │   ├── alembic/            # Database Migrations
-│   ├── tests/              # 25 Unit & Integration Tests (pytest-asyncio)
+│   ├── tests/              # Full Test Suite (pytest-asyncio)
 │   ├── Dockerfile          # Production Multi-Stage Dockerfile (Non-Root User)
 │   ├── docker-compose.yml  # Local Container Orchestration with PostgreSQL
 │   └── docker-entrypoint.sh # Container Bootstrap (Migrations & Startup)
+├── frontend/               # React SOC Security Dashboard (Tailwind, Lucide, Vite)
 ├── data/                   # Organizer-Provided Actual Security Log Datasets
 ├── terraform/              # Reusable AWS IaC Configuration (ECS Fargate, RDS, S3, ALB, ECR)
 ├── .github/workflows/      # Production CI/CD Deployment Pipeline (GitHub Actions)
@@ -40,7 +41,7 @@ ModelVault/
 Start PostgreSQL and the ModelVault API backend container in a single step:
 
 ```bash
-cd modelvault-backend
+cd backend
 docker-compose up --build -d
 ```
 
@@ -56,6 +57,7 @@ When the container starts:
 - **Dashboard Metrics**: `GET http://localhost:8000/api/v1/dashboard/summary`
 - **Run Full Pipeline**: `POST http://localhost:8000/api/v1/analysis/run`
 - **Interactive Swagger Docs**: `http://localhost:8000/docs`
+- **Frontend Dashboard**: `http://localhost:5173/`
 
 ---
 
@@ -109,11 +111,11 @@ terraform apply -var="db_password=YourSecurePassword123!" -auto-approve
 
 ---
 
-### 2. Automated GitHub Actions CI/CD Pipeline (`.github/workflows/ci-cd.yml`)
+## 2. Automated GitHub Actions CI/CD Pipeline (`.github/workflows/ci-cd.yml`)
 
 The CI/CD pipeline triggers automatically on pushes to `main`/`master`:
 
-1. **Test & Lint**: Executes `pytest` test suite (25 tests) and `ruff` linting.
+1. **Test & Lint**: Executes `pytest` test suite and `ruff` linting.
 2. **Terraform Validation**: Validates syntax (`terraform validate` and `terraform fmt`).
 3. **Docker Build & ECR Push**: Builds production Docker image, tags with Git commit SHA and `:latest`, and pushes to Amazon ECR.
 4. **ECS Deployment**: Performs rolling zero-downtime update on ECS Fargate service and executes database migrations.
@@ -131,8 +133,8 @@ Configure the following secrets in GitHub Repository Settings $\rightarrow$ Secr
 Run the full async test suite locally:
 
 ```bash
-cd modelvault-backend
+cd backend
 python -m pytest tests -v
 ```
 
-All 25 unit and integration tests execute against an isolated SQLite in-memory database.
+All 26 unit and integration tests execute against an isolated database environment.

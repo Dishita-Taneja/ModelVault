@@ -21,7 +21,7 @@ services:
 
   backend:
     build:
-      context: ./modelvault-backend
+      context: ./backend
       dockerfile: Dockerfile
     container_name: modelvault-backend
     restart: always

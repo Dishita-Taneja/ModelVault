@@ -39,7 +39,7 @@ Features are scaled using `StandardScaler` (`app/ml/feature_engineering.py`). Th
   - `random_state`: 42 (Ensures reproducible training)
 - **Unsupervised Learning Constraint**: No explicit ground-truth labels (`anomaly_flag`, `risk_score`) are used during model training to avoid target leakage.
 
-### Reproducible Training Workflow ([`app/ml/training.py`](file:///c:/Users/Admin/OneDrive/Desktop/ModelVault/modelvault-backend/app/ml/training.py))
+### Reproducible Training Workflow ([`app/ml/training.py`](file:///c:/Users/Admin/OneDrive/Desktop/ModelVault/backend/app/ml/training.py))
 ```
 Raw Events / DB Persistence
    ├──> Feature Engineering & Scaling
